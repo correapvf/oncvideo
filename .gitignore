@@ -1,0 +1,7 @@
+__pycache__/
+oncvideo.egg-info/
+build/
+dist/
+
+.vscode/
+test/
