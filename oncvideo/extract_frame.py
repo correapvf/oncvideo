@@ -1,17 +1,17 @@
 from pathlib import Path
 import tempfile
-import subprocess as sp
 import pandas as pd
 from tqdm import tqdm 
-from ._utils import parse_file_path, parse_trim, download_file
+from ._utils import parse_file_path, download_file, run_ffmpeg, trim_group
 
 
 def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace=False, rounding_near=False):
 
-    df, has_group, need_download = parse_file_path(arg_input)
+    fileOut = Path(output + '.csv')
+    if arg_input == fileOut.name:
+        raise ValueError("Output folder must be a different name than input csv.")
 
-    if trim:
-        df = parse_trim(arg_input, df)
+    df, has_group, need_download = parse_file_path(arg_input)
 
     header = 'filename,video_filename,timestamp\n'
     if has_group:
@@ -42,7 +42,6 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
 
 
     # check if command has been started alread
-    fileOut = Path(output + '.csv')
     if fileOut.exists():
         tmp = pd.read_csv(fileOut)
         count = df.shape[0]
@@ -54,7 +53,7 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
         f = open(fileOut, "w", newline='', encoding="utf-8")
         f.write(header)
 
-    pbar = tqdm(total=df.shape[0])
+    pbar = tqdm(total=df.shape[0], desc = 'Processed files')
     
     for name, group in df.groupby('group'):
         
@@ -66,43 +65,20 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
         
         group = group.copy()
         group['video_filename'] =  group['filename'].copy()
-        group['skip'] = [[] for _ in range(len(group))]
+        group['skip'] = [[]] * len(group)
+
         if trim:
-            # first file
-            r1_split = group['filename'].iloc[0].split('_')
-            r1_split2 = r1_split[-1].split('.')
+            group = trim_group(group)
 
-            r1 = pd.to_datetime(r1_split2[0], format='%Y%m%dT%H%M%S', utc=True)
-            r01 = group['dateFromQuery'].iloc[0]
-            rdiff1 = (r01 - r1).total_seconds()
-            if rdiff1 > 0: # Only if datefromquery is after date of file
-                newtime = group['dateFromQuery'].iloc[0].strftime(format='%Y%m%dT%H%M%S.%f')[:-3] + 'Z'
-                r1_split3 = r1_split2[1].split('-')
-                if len(r1_split3) > 1: # bitrate is also in the name
-                    bitrate = r1_split3[1]
-                    newname = f"{'_'.join(r1_split[:-1])}_{newtime}-{bitrate}.{r1_split2[-1]}"
-                else:
-                    newname = f"{'_'.join(r1_split[:-1])}_{newtime}.{r1_split2[-1]}"
-                
-                group['filename'].iloc[0] = newname
-                group['skip'].iloc[0] = ['-ss', str(rdiff1)]
-
-
-
-            # last file
-            r2 = group['filename'].iloc[-1].split('_')[-1].split('.')[0]
-            r2 = pd.to_datetime(r2, format='%Y%m%dT%H%M%S', utc=True)
-            r02 = group['dateToQuery'].iloc[-1]
-            rdiff2 = (r02 - r2).total_seconds()
-            group['skip'].iloc[-1] = ['-to', str(rdiff2)]
-
-        
+        # start interating for each file
         for _, row in group.iterrows():
             # extract frames for each video
             file_name = Path(row['filename']).stem
             if need_download:
                 tmpfile = tempfile.gettempdir() / Path(row['filename'])
-                download_file(row['urlfile'], tmpfile)
+                success = download_file(row['urlfile'], tmpfile)
+                if not success:
+                    continue
                 tmpfile_str = str(tmpfile)
             else:
                 tmpfile_str = row['urlfile']
@@ -114,7 +90,8 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
                 f"{outfolder / file_name}_%05d.jpg"]
             
 
-            sp.run(ff_cmd, check=False)
+            run_ffmpeg(ff_cmd, file_name)
+
             if need_download:
                 tmpfile.unlink()
 
@@ -128,7 +105,7 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
 
                 if dout['timestamp'].str.contains('Z-', regex=False).any():
                     dout['timestamp'] = dout['timestamp'].str.split('-').str[0]
-                
+
                 dout['timestamp'] = pd.to_datetime(dout['timestamp'], format='%Y%m%dT%H%M%S.%fZ', utc=True)
                 dout['timeadd'] = dout['filename_split'].str[-1].astype(float) * interval - interval2
                 dout['timestamp'] = dout['timestamp'] + pd.to_timedelta(dout['timeadd'], unit='sec')
@@ -146,8 +123,8 @@ def extractFrame(arg_input, interval=1, output='frames', trim=False, deinterlace
                 
                 dout.to_csv(f, mode='a', index=False, header=False)
             else:
-                with open("log_download.txt", 'a', encoding="utf-8") as f:
-                    f.write(f"No frame was extracted from: {row['urlfile']}\n")
+                with open("log_download.txt", 'a', encoding="utf-8") as ferr:
+                    ferr.write(f"No frame was extracted from: {row['urlfile']}\n")
             
             pbar.update()
 

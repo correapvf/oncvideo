@@ -49,7 +49,7 @@ def meta_video(urlfile, check_interlaced):
     fps = float(fps[0]) / float(fps[1])
     fps_mode = 'Constant' if fps_avg==fps_set else 'Variable'
 
-    duration = strftd(round(nseconds))
+    duration = strftd(nseconds)
 
     return f'{codec},{pix_fmt},{bit_rate},{fps},{fps_mode},{scan_type},{aspect},{frame_W},{frame_H},{duration},{fileSize}'
 

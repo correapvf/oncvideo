@@ -1,6 +1,4 @@
-from os import linesep
 import argparse
-from pandas import Timestamp
 from onc.onc import ONC
 from .list_files import list_file, list_file_batch
 from .dives_ONC import getDives
@@ -8,6 +6,7 @@ from .video_info import video_info
 from .DIDSON_info import didson_info
 from .extract_frame import extractFrame
 from .download_files import download_files
+from .convert_to_mp4 import to_mp4
 from .extract_FOV import extractFOV
 
 # Default functions used by each subcommand
@@ -17,27 +16,14 @@ def flist(args):
         locationCode=args.locationCode, dive=args.dive, deviceCategoryCode=args.deviceCategoryCode,
         dateFrom=args.dateFrom, dateTo=args.dateTo, quality=args.quality, extension=args.extension,
         statistics=args.statistics)
-
-    timenow = Timestamp.now(tz="UTC").strftime('%Y-%m-%d %H:%M:%S UTC')
-    with open(args.output, 'w', newline='', encoding="utf-8") as f:
-        f.write(f'# Ocean Networks Canada Data Archive{linesep}')
-        f.write(f"# dateFrom: {df.QuerrydateFrom}{linesep}")
-        f.write(f"# dateTo: {df.QuerrydateTo}{linesep}")
-        f.write(f'# File Creation Date: {timenow}{linesep}')
-        df.to_csv(f, mode='a', index=False)
+    df.to_csv(args.output, index=False)
     
 
 def fbatch(args):
     onc = ONC(args.token)
     df = list_file_batch(onc, args.csvfile, quality=args.quality, extension=args.extension,
         statistics=args.statistics)
-    
-    timenow = Timestamp.now(tz="UTC").strftime('%Y-%m-%d %H:%M:%S UTC')
-    with open(args.output, 'w', newline='', encoding="utf-8") as f:
-        f.write(f'# Ocean Networks Canada Data Archive{linesep}')
-        f.write(f'# Batch file: {args.csvfile}{linesep}')
-        f.write(f'# File Creation Date: {timenow}{linesep}')
-        df.to_csv(f, mode='a', index=False)
+    df.to_csv(args.output, index=False)
 
 def fgetDives(args):
     onc = ONC(args.token)
@@ -56,6 +42,9 @@ def fdownload(args):
 def fextframe(args):
     extractFrame(args.input, args.interval, args.output, args.trim, args.deinterlace, args.rounding_near)
 
+def ftomp4(args):
+    to_mp4(args.input, args.output, args.trim, args.deinterlace, args.target_quality)
+
 def fextFOV(args):
     # convert comma separated to list
     args.timestamps = [x for x in args.timestamps.split(",")]
@@ -63,7 +52,7 @@ def fextFOV(args):
         args.duration = [x for x in args.duration.split(",")]
         if len(args.duration) == 1:
             args.duration = args.duration * len(args.timestamps)
-    
+
     extractFOV(args.input, args.timestamps, args.duration, args.output, args.deinterlace)
 
 def main():
@@ -109,7 +98,7 @@ def main():
 
     # List Batch command
     subparser_blist = subparsers.add_parser(
-        'batch', help="List video files based on parameters stored in a csv file.")
+        'blist', help="List video files based on parameters stored in a csv file.")
     subparser_blist.add_argument('token', help='API token')
     subparser_blist.add_argument('csvfile', help='Csv file with arguments to interate')
 
@@ -158,8 +147,24 @@ def main():
         'input', help="A csv file with list of archived filenames (output of 'list' command).")
     subparser_download.add_argument('-o', '--output', default="output",
                             help="Folder to download files. Default 'output'")
-    subparser_download.add_argument('-t', '--trim', action="store_true", help='')
+    subparser_download.add_argument('-t', '--trim', action="store_true",
+                            help='Trim video files to match the initial seach query.')
     subparser_download.set_defaults(func=fdownload)
+
+    # Convert to mp4
+    subparser_tomp4 = subparsers.add_parser(
+        'tomp4', help="Convert video to mp4 format")
+    subparser_tomp4.add_argument(
+        'input', help="A csv file with list of archived filenames (output of 'list' command).")
+    subparser_tomp4.add_argument('-o', '--output', default="output",
+                            help="Folder to download files. Default 'output'")
+    subparser_tomp4.add_argument('-t', '--trim', action="store_true",
+                            help='Trim video files to match the initial seach query.')
+    subparser_tomp4.add_argument('-d', '--deinterlace', action="store_true",
+                        help='Deinterlace video. Default to False.')
+    subparser_tomp4.add_argument('-crf', '--target_quality', type=float,
+                        help='Set CRF (quality level) in ffmpeg.')
+    subparser_tomp4.set_defaults(func=ftomp4)
 
     # extract Frame
     subparser_extframe = subparsers.add_parser(
@@ -169,7 +174,8 @@ def main():
                             help="Get frames every 'X' seconds. Default to 1 second.")
     subparser_extframe.add_argument('-o', '--output', default="frames",
                             help="Folder to download frames. Default 'frames'")
-    subparser_extframe.add_argument('-t', '--trim', action="store_true", help='')
+    subparser_extframe.add_argument('-t', '--trim', action="store_true",
+                            help='Trim video files to match the initial seach query.')
     subparser_extframe.add_argument('-d', '--deinterlace', action="store_true",
                             help='Deinterlace video. Default to False.')
     subparser_extframe.add_argument('-n', '--rounding_near', action="store_true",
@@ -204,14 +210,6 @@ def main():
 # TO DO
 # Download from seatube pro and seatubeV3
 # download NAV and CTD files from same site
-# extract frame from multiple FOV
-
-# https://data.oceannetworks.ca/SeaTube?resourceTypeId=1000&resourceId=66500&diveId=158785978&time=2023-07-02T03:14:15.000Z
-# https://data.oceannetworks.ca/SeaTube?resourceTypeId=1000&resourceId=74260&diveId=163865871&time=2023-09-08T00:37:57.000Z
-# https://data.oceannetworks.ca/SeaTube?resourceTypeId=1000&resourceId=74260&diveId=163953846&time=2023-09-09T00:15:38.000Z
-
-# https://data.oceannetworks.ca/SeaTubeV3?resourceTypeId=600&resourceId=5590&time=2021-08-23T04:46:32.000Z
-
 
 # args = parser.parse_args(['list','--token','c1416a5f-2dc7-4cc6-83f0-17a8261f9826','--deviceCode','AXISCAMB8A44F04DEEA'])
 # args

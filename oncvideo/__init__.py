@@ -4,4 +4,5 @@ from .video_info import video_info
 from .DIDSON_info import didson_info
 from .extract_frame import extractFrame
 from .download_files import download_files
+from .convert_to_mp4 import to_mp4
 from .extract_FOV import extractFOV

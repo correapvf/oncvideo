@@ -1,5 +1,5 @@
 import pandas as pd
-from ._utils import sizeof_fmt, strftd, parse_time, parse_time_series
+from ._utils import sizeof_fmt, strftd, parse_time, parse_time_series, name_to_timestamp
 from .dives_ONC import getDives
 
 def ask_options(results, ivalue, ihelp):
@@ -61,8 +61,10 @@ def list_file_helper(df, statistics, extension, quality):
     cols = df.columns.to_list()
     if 'group' in cols:
         cols_new = ['group', 'filename']
+        cols_sort = ['group', 'ext']
     else:
         cols_new = ['filename']
+        cols_sort = ['ext']
 
 
     # select extension
@@ -98,6 +100,33 @@ def list_file_helper(df, statistics, extension, quality):
         # Only keep quality column if more than one quality after filter
         if len(qualityn) > 1 or quality == 'all':
             cols_new += ['quality']
+            cols_sort += ['quality']
+
+    # Start and End columns
+    df['ext'] = df['filename'].str.split('.').str[-1]
+
+    df.sort_values(cols_sort + ['filename'], inplace=True, ignore_index=True)
+    df['start_end'] = ''
+
+    for _, group in df.groupby(cols_sort):
+
+        # first file
+        r1 = name_to_timestamp(group['filename'].iloc[0])
+        r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format='%Y-%m-%dT%H:%M:%S.%fZ')
+        nseconds = (r01 - r1).total_seconds()
+        sign = '-' if nseconds < 0 else ''
+        df.loc[group.index[0],'start_end'] = f'{sign}{strftd(abs(nseconds))}'
+
+        # last file
+        r2 = name_to_timestamp(group['filename'].iloc[-1])
+        r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format='%Y-%m-%dT%H:%M:%S.%fZ')
+        nseconds = (r02 - r2).total_seconds()
+        sign = '-' if nseconds < 0 else ''
+        if df.loc[group.index[-1],'start_end'] == '':
+            df.loc[group.index[-1],'start_end'] = f'{sign}{strftd(abs(nseconds))}'
+        else:
+            df.loc[group.index[-1],'start_end'] = f"{df.loc[group.index[-1],'start_end']}/{sign}{strftd(abs(nseconds))}"
+
 
     # calculate and print overall statistics
     print('Number of files: ', df.shape[0])
@@ -118,6 +147,7 @@ def list_file_helper(df, statistics, extension, quality):
         df['minute'] = df['dateFrom'].dt.minute
         df['second'] = df['dateFrom'].dt.second
 
+    cols_new += ['start_end']
     return df[cols_new]
 
 
@@ -132,10 +162,7 @@ def list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
         }
 
     result = onc.getListByDevice(filters, allPages=True)
-    result = result['files']
-
-    df = pd.DataFrame(result) if statistics else pd.DataFrame(result, columns=["filename"])
-    return df
+    return api_to_df(result, dateFrom, dateTo, statistics)
 
 
 def list_file_lc(onc, locationCode, deviceCategoryCode,
@@ -157,9 +184,14 @@ def list_file_lc(onc, locationCode, deviceCategoryCode,
     }
 
     result = onc.getListByLocation(filters, allPages=True)
-    result = result['files']
+    return api_to_df(result, dateFrom, dateTo, statistics)
 
+
+def api_to_df(result, dateFrom, dateTo, statistics):
+    result = result['files']
     df = pd.DataFrame(result) if statistics else pd.DataFrame(result, columns=["filename"])
+    df['dateFromQuery'] = dateFrom
+    df['dateToQuery'] = dateTo
     return df
 
 
@@ -202,12 +234,12 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
 
     else:
         raise ValueError("One of {deviceCode, deviceId, locationCode, dive} is required")
-    
+
     df = list_file_helper(df, statistics, extension, quality)
-    df.QuerrydateFrom = dateFrom
-    df.QuerrydateTo = dateTo
 
     return df
+
+
 
 
 def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=False):
