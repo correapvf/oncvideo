@@ -1,8 +1,12 @@
+"""List archived files from ONC"""
 import pandas as pd
-from ._utils import sizeof_fmt, strftd, parse_time, parse_time_series, name_to_timestamp
-from .dives_ONC import getDives
+from ._utils import sizeof_fmt, strftd, name_to_timestamp
+from .dives_onc import get_dives
 
 def ask_options(results, ivalue, ihelp):
+    """
+    List option and ask user to select which result they want to keep
+    """
     noptions = len(results)
     input_message = f'Select a {ivalue}:\n'
     for index in range(noptions):
@@ -29,6 +33,10 @@ def ask_options(results, ivalue, ihelp):
     return out
 
 def ask_options_multiple(results, ivalue):
+    """
+    List option and ask user to select which result they want to keep
+    Allows multiple values to be choosen
+    """
     results = pd.concat([results, pd.Series([results.sum()], index=['all'])])
     input_message = f"Select a {ivalue}:\n"
     for index, item in enumerate(results.items()):
@@ -56,8 +64,11 @@ def ask_options_multiple(results, ivalue):
     return out
 
 
-def list_file_helper(df, statistics, extension, quality):
-
+def list_file_helper(df, statistics, extension, quality, cols_to_keep):
+    """
+    Helper function to get the API output and filter unwanted
+    files and format columns
+    """
     cols = df.columns.to_list()
     if 'group' in cols:
         cols_new = ['group', 'filename']
@@ -74,11 +85,11 @@ def list_file_helper(df, statistics, extension, quality):
     if len(extn) > 1:
         if extension == 'ask':
             extension = ask_options_multiple(extn, "extension")
-        
+
         if extension != 'all':
             extension = extension.split(',')
             df = df[df['ext'].isin(extension)].copy()
-    
+
     # select quality
     if df['filename'].str.contains('Z-', regex=False).any():
 
@@ -94,7 +105,7 @@ def list_file_helper(df, statistics, extension, quality):
             if quality != 'all':
                 quality = quality.split(',')
                 df = df[df['quality'].isin(quality)]
-            
+
             qualityn = df['quality'].value_counts()
 
         # Only keep quality column if more than one quality after filter
@@ -106,34 +117,38 @@ def list_file_helper(df, statistics, extension, quality):
     df['ext'] = df['filename'].str.split('.').str[-1]
 
     df.sort_values(cols_sort + ['filename'], inplace=True, ignore_index=True)
-    df['start_end'] = ''
+    df['query_offset'] = ''
+    timef = '%Y-%m-%dT%H:%M:%S.%fZ'
 
     for _, group in df.groupby(cols_sort):
 
         # first file
         r1 = name_to_timestamp(group['filename'].iloc[0])
-        r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format='%Y-%m-%dT%H:%M:%S.%fZ')
+        r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format=timef)
         nseconds = (r01 - r1).total_seconds()
         sign = '-' if nseconds < 0 else ''
-        df.loc[group.index[0],'start_end'] = f'{sign}{strftd(abs(nseconds))}'
+        df.loc[group.index[0],'query_offset'] = f'{sign}{strftd(abs(nseconds))}'
 
         # last file
         r2 = name_to_timestamp(group['filename'].iloc[-1])
-        r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format='%Y-%m-%dT%H:%M:%S.%fZ')
+        r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format=timef)
         nseconds = (r02 - r2).total_seconds()
         sign = '-' if nseconds < 0 else ''
-        if df.loc[group.index[-1],'start_end'] == '':
-            df.loc[group.index[-1],'start_end'] = f'{sign}{strftd(abs(nseconds))}'
+        if df.loc[group.index[-1],'query_offset'] == '':
+            df.loc[group.index[-1],'query_offset'] = f'{sign}{strftd(abs(nseconds))}'
         else:
-            df.loc[group.index[-1],'start_end'] = f"{df.loc[group.index[-1],'start_end']}/{sign}{strftd(abs(nseconds))}"
+            df.loc[group.index[-1],'query_offset'] = (f"{df.loc[group.index[-1],'query_offset']}"
+                f"/{sign}{strftd(abs(nseconds))}")
 
+    if cols_to_keep is not None:
+        cols_new += cols_to_keep
 
     # calculate and print overall statistics
     print('Number of files: ', df.shape[0])
     if statistics:
         cols_new += ['duration','fileSizeMB','year','month','day','hour','minute','second']
-        df['dateFrom'] = pd.to_datetime(df['dateFrom'], format='%Y-%m-%dT%H:%M:%S.%fZ', utc=True)
-        df['dateTo'] = pd.to_datetime(df['dateTo'], format='%Y-%m-%dT%H:%M:%S.%fZ', utc=True)
+        df['dateFrom'] = pd.to_datetime(df['dateFrom'], format=timef, utc=True)
+        df['dateTo'] = pd.to_datetime(df['dateTo'], format=timef, utc=True)
         df['duration'] = df['dateTo'] - df['dateFrom']
         print('Total duration: ', df['duration'].sum())
         print('Total file size: ', sizeof_fmt(df['fileSize'].sum()))
@@ -147,12 +162,14 @@ def list_file_helper(df, statistics, extension, quality):
         df['minute'] = df['dateFrom'].dt.minute
         df['second'] = df['dateFrom'].dt.second
 
-    cols_new += ['start_end']
+    cols_new += ['query_offset']
     return df[cols_new]
 
 
 def list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
-
+    """
+    Get file list by device code
+    """
     returnOptions = 'all' if statistics else None
     filters = {
             'deviceCode'     : deviceCode,
@@ -167,7 +184,9 @@ def list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
 
 def list_file_lc(onc, locationCode, deviceCategoryCode,
                dateFrom, dateTo, statistics):
-
+    """
+    Get file list by location code
+    """
     if deviceCategoryCode == 'ask':
         filters = {'locationCode': locationCode}
         results = onc.getDeviceCategories(filters)
@@ -188,6 +207,9 @@ def list_file_lc(onc, locationCode, deviceCategoryCode,
 
 
 def api_to_df(result, dateFrom, dateTo, statistics):
+    """
+    Extract output from the API
+    """
     result = result['files']
     df = pd.DataFrame(result) if statistics else pd.DataFrame(result, columns=["filename"])
     df['dateFromQuery'] = dateFrom
@@ -196,23 +218,70 @@ def api_to_df(result, dateFrom, dateTo, statistics):
 
 
 def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None, deviceCategoryCode='ask',
-    dateFrom=None, dateTo=None, quality='ask', extension='mp4', statistics=False):
+    dateFrom=None, dateTo=None, quality='ask', extension='mp4', statistics=True):
+    """
+    Get list of files archived in Oceans 3.0
 
+    Search archived files based on one of the following criterias: decideCode,
+    deviceId, locationCode and dive number. One of these parameters need to
+    be suplied to the function. 
+
+    Parameters
+    ----------
+    onc : onc.ONC
+        ONC class object
+    deviceCode : str
+        Devide code to seach files
+    deviceId : str or int
+        Devide Id to seach files
+    locationCode : str
+        Location code to seach files
+    dive : str
+        Dive number to seach files
+    deviceCategoryCode : str, default ask
+        Device category code to search files. Only used when locationCode is suplied.
+        Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' for ROVs.
+        'ask' will list avaiable options and ask user to choose one.
+    dateFrom : str or datetime
+        Return videos after specified datetime. Can be any format that is parsed
+        by pandas.to_datetime. If None, will search all videos since the device
+        was first deployed.
+    dateFrom : str or datetime
+        Return videos before specified datetime. Can be any format that is parsed
+        by pandas.to_datetime. If None, will search all videos until the current
+        date.
+    quality : str, default ask
+        Especify a quality to filter videos. Usually should be LOW, standard,
+        1500, 5000, UHD. 'ask' will list avaiable options and ask user to choose one.
+        'all' will get all avaiable videos. Accepts multiple values as comma separated.
+    extension : str, default mp4
+        Especify a extension to filter videos. 'ask' will list avaiable options and
+        ask user to choose one. 'all' will get all avaiable videos.
+        Accepts multiple values as comma separated.
+    statistics : bool, default True
+        Also save video durations and file sizes.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with the filenames, and videos duration and file sizes if
+        statistics is True
+    """
     if dateFrom is not None:
-        dateFrom = parse_time(dateFrom)
+        dateFrom = pd.to_datetime(dateFrom, utc=True).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
     if dateTo is not None:
-        dateTo = parse_time(dateTo)
-    
+        dateTo = pd.to_datetime(dateTo, utc=True).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
     if deviceCode:
         df = list_file_dc(onc, deviceCode, dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
-    
+
     elif locationCode:
-        df = list_file_lc(onc, locationCode, deviceCategoryCode=deviceCategoryCode, dateFrom=dateFrom,
-            dateTo=dateTo, statistics=statistics)
+        df = list_file_lc(onc, locationCode, deviceCategoryCode=deviceCategoryCode,
+            dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
 
     elif dive:
-        dives = getDives(onc, False)
+        dives = get_dives(onc, False)
 
         result = dives[dives['dive'] == dive]
         if result.shape[0] != 1:
@@ -220,7 +289,7 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
 
         if dateFrom is None:
             dateFrom = result['startDate'].values[0]
-        
+
         if dateTo is None:
             dateTo = result['endDate'].values[0]
 
@@ -235,16 +304,50 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
     else:
         raise ValueError("One of {deviceCode, deviceId, locationCode, dive} is required")
 
-    df = list_file_helper(df, statistics, extension, quality)
+    df = list_file_helper(df, statistics, extension, quality, None)
 
     return df
 
 
 
 
-def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=False):
+def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=True, keep_cols=False):
+    """
+    Batch list of files archived in Oceans 3.0
+    List video files based on parameters stored in a csv file
 
+    This function will execute multiple search for archived files based on parameters stored
+    in a csv file. Usefull to get videos from multiple sites and/or dives.
+    Column names must be one of decideCode, deviceId, locationCode or dive.
+    Csv may also include parameters dateFrom, dateTo, and deviceCategoryCode.
+    Details on these parameters can be found in 'list_file' function. A column named 'group'
+    can also be used to distingshed each query in the final table.
 
+    Parameters
+    ----------
+    onc : onc.ONC
+        ONC class object
+    csvfile : str, path object or file-like object
+        Location to the input csv file.
+    quality : str, default ask
+        Especify a quality to filter videos. Usually should be LOW, standard,
+        1500, 5000, UHD. 'ask' will list avaiable options and ask user to choose one.
+        'all' will get all avaiable videos. Accepts multiple values as comma separated.
+    extension : str, default mp4
+        Especify a extension to filter videos. 'ask' will list avaiable options and
+        ask user to choose one. 'all' will get all avaiable videos.
+        Accepts multiple values as comma separated.
+    statistics : bool, default True
+        Also save video durations and file sizes.
+    keep_cols : bool, default False
+        Keep other columns from csvfile into the output.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame with the filenames, and videos duration and file sizes if
+        statistics is True
+    """
     file = pd.read_csv(csvfile)
     cols = file.columns.to_list()
 
@@ -258,25 +361,25 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Fal
             in the csv file")
 
     if (dc+lc) == 0:
-    
+
         if dv:
-            dives = getDives(onc, False)
+            dives = get_dives(onc, False)
 
             dives.rename(columns={'startDate': 'dateFrom', 'endDate': 'dateTo'}, inplace=True)
             dives = dives[['dive','deviceCode','dateFrom','dateTo']]
-            
+
             nrows = file.shape[0]
             file = pd.merge(file, dives, how="inner", on="dive", suffixes=(None,'_y'))
 
             if file.shape[0] < nrows:
                 raise ValueError("Some dives in the csv file do not match any dive.")
 
-        
+
         elif di:
             result = pd.DataFrame(onc.getDevices())
             result = result[['deviceCode','deviceId']]
             file = pd.merge(file, result, how="inner", on="deviceId")
-        
+
         dc = True
         cols = file.columns.to_list() # update
 
@@ -284,12 +387,24 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Fal
         raise ValueError("'dateFrom' must be a column in the csv file (exept if 'dive' is provided).")
     if not 'dateTo' in cols:
         raise ValueError("'dateTo' must be a column in the csv file (exept if 'dive' is provided).")
-    
-    file['dateFrom'] = parse_time_series(file['dateFrom'])
-    file['dateTo'] = parse_time_series(file['dateTo'])
+
+    file['dateFrom'] = pd.to_datetime(file['dateFrom'], utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.%f').str[:-3]+'Z'
+    file['dateTo'] = pd.to_datetime(file['dateTo'], utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.%f').str[:-3]+'Z'
 
     if not 'group' in cols:
         file['group'] = 'row' + file.index.astype(str)
+
+    if keep_cols:
+        z = ['group','deviceCode','deviceId','locationCode','dive',
+            'dateFrom','dateTo','deviceCategoryCode']
+        cols_to_keep = [x for x in cols if x not in z]
+    else:
+        cols_to_keep = ['fovs'] if 'fovs' in cols else None
+
+    if cols_to_keep is None:
+        cols_to_keep_g = 'group'
+    else:
+        cols_to_keep_g = cols_to_keep + ['group']
 
     df = []
 
@@ -297,22 +412,24 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Fal
         for _, row in file.iterrows():
             df_tmp = list_file_dc(onc, row['deviceCode'], dateFrom=row['dateFrom'],
                 dateTo=row['dateTo'], statistics=statistics)
-            df_tmp['group'] = row['group']
+            y = row[cols_to_keep_g].to_dict()
+            df_tmp.assign(**y)
             df.append(df_tmp)
     else: #lc
         if not 'deviceCategoryCode' in cols:
             raise ValueError("'deviceCategoryCode' must be a column in the csv file when using locationCode.")
-            
+
         for _, row in file.iterrows():
             df_tmp = list_file_lc(onc, row['locationCode'], deviceCategoryCode=row['deviceCategoryCode'],
                 dateFrom=row['dateFrom'], dateTo=row['dateTo'], statistics=statistics)
-            df_tmp['group'] = row['group']
+            y = row[cols_to_keep_g].to_dict()
+            df_tmp.assign(**y)
             df.append(df_tmp)
 
     df = pd.concat(df)
 
-    df = list_file_helper(df, statistics, extension, quality)
-    
+    df = list_file_helper(df, statistics, extension, quality, cols_to_keep)
+
     column_group = df.pop("group")
     df.insert(0, "group", column_group)
     return df

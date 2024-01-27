@@ -1,6 +1,6 @@
 # ONCvideo
 
-A collection of tools to help get archived videos from Oceans3.
+A collection of commands to help get archived videos from Oceans 3.
 
 Avaiable commands include:
 

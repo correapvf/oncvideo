@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oncvideo"
+version = "1.2"
+dependencies = [
+  "numpy",
+  "pandas",
+  "requests",
+  "tqdm",
+  "onc",
+  "backoff",
+  "ffmpeg_progress_yield",
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "Paulo Correa", email = "pcorrea@oceannetworks.ca"}
+]
+description = "A collection of commands to help get archived videos from Oceans 3."
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
+[project.urls]
+Repository = "https://github.com/correapvf/oncvideo"
+
+[project.scripts]
+oncvideo = arg_parser:main

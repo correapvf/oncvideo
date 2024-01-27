@@ -1,80 +1,121 @@
-import tempfile
-from pathlib import Path
-from tqdm import tqdm
-from ._utils import download_file, parse_file_path, run_ffmpeg, trim_group, name_to_timestamp
+"""Module providing functions to download and convert video."""
+from ._utils import run_ffmpeg, name_to_timestamp
+from ._iterate_ffmpeg import iterate_ffmpeg
 
-def download_files(arg_input, output='output', trim=False):
 
-    fileOut = Path(output + '.csv')
-    if arg_input == fileOut.name:
-        raise ValueError("Output folder must be a different name than input csv.")
+def ffmpeg_run_download(input_file, output_file, skip, params, f, subfolder, video_name):
+    """
+    Create and run ffmpeg command and save csv file
+    """
+    # get timestamp from filename
+    timestamp = name_to_timestamp(output_file.name)
+    timestamp = timestamp.strftime(format='%Y-%m-%d %H:%M:%S.%f')[:-3]
 
-    df, has_group, need_download = parse_file_path(arg_input)
+    # Create ffmpeg command and run
+    if len(skip) == 0: # no need to crop video, just move file
+        input_file.rename(output_file)
+    else:
+        ff_cmd = ['ffmpeg'] + skip + ['-i', input_file] + params + [output_file]
+        run_ffmpeg(ff_cmd, filename=output_file.name)
 
-    if not need_download:
+    # write in csv file
+    f.write(f"{subfolder}{output_file.name},{video_name},{timestamp}\n")
+
+
+def download_files(source, output='output', trim=False):
+    """
+    Download files from the table provided by source
+
+    Parameters
+    ----------
+    source : str or DataFrame
+        A pandas DataFrame, or a path to .csv file
+    output : str, default 'output'
+        Name of the output folder to save converted videos
+    trim : bool, default False
+        Trim video files to match the initial seach query
+    """
+    if '*' in source:
         raise ValueError("Input must be a DataFrame or .csv with files to download.")
 
     header = 'filename,video_filename,timestamp\n'
-    if has_group:
-        header = 'subfolder,' + header
-        df.sort_values(['group','filename'], inplace=True)
-    else:
-        df.sort_values(['filename'], inplace=True)
-        df['group'] = 'group1'
 
-    folder = Path(output)
-    folder.mkdir(exist_ok=True)
+    params = ['-c', 'copy']
 
-    # check if command has been started alread
-    if fileOut.exists():
-        f = open(fileOut, "a", encoding="utf-8")
-    else:
-        f = open(fileOut, "w", encoding="utf-8")
-        f.write(header)
+    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_download, params)
 
-    pbar = tqdm(total=df.shape[0], desc = 'Processed files')
 
-    for name, group in df.groupby('group'):
+def ffmpeg_run_mp4(input_file, output_file, skip, params, f, subfolder, video_name):
+    """
+    Create and run ffmpeg command and save csv file
+    """
+    # get timestamp from filename
+    timestamp = name_to_timestamp(output_file.name)
+    timestamp = timestamp.strftime(format='%Y-%m-%d %H:%M:%S.%f')[:-3]
 
-        if has_group:
-            outfolder = folder / Path(name)
-            outfolder.mkdir(exist_ok=True)
-            subfolder = name + ','
-        else:
-            outfolder = folder
-            subfolder = ''
+    # change extension
+    output_file = output_file.with_suffix('.mp4')
 
-        group = group.copy()
-        group['video_filename'] =  group['filename'].copy()
-        group['skip'] = [[]] * len(group)
-        
-        if trim:
-            group = trim_group(group)
+    # Create ffmpeg command and run
+    ff_cmd = ['ffmpeg'] + skip + ['-i', input_file] + params + [output_file]
+    run_ffmpeg(ff_cmd, filename=output_file.name)
 
-        for _, row in group.iterrows():
+    # write in csv file
+    f.write(f"{subfolder}{output_file.name},{video_name},{timestamp}\n")
 
-            output_file = outfolder / Path(row['filename'])
-            timestamp = name_to_timestamp(row['filename'])
-            timestamp = timestamp.strftime(format='%Y-%m-%d %H:%M:%S.%f')[:-3]
 
-            if not output_file.exists():
-                if row['skip'] == '': # download files not trimmed
-                    success = download_file(row['urlfile'], output_file)
-                    if success:
-                        f.write(f"{subfolder}{row['filename']},{row['video_filename']},{timestamp}\n")
-                
-                else: # need to be trimmed
+def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
+    keep_audio=False, yuv420=False, h265=False):
+    """
+    Convert video to mp4
 
-                    tmpfile = tempfile.gettempdir() / Path(output_file.name)
-                    success = download_file(group['urlfile'].iloc[-1], tmpfile)
-                    if success:
-                        
-                        ff_cmd = ['ffmpeg'] + row['skip'] + ['-i', tmpfile,
-                            '-c', 'copy', output_file]
-                        run_ffmpeg(ff_cmd, filename=output_file.name)
-                        f.write(f"{subfolder}{row['filename']},{row['video_filename']},{timestamp}\n")
-            
-            pbar.update()
+    Videos are encoded to mp4 (h264) constrained by quality
+    (Constant Rate Factor), with a faststart option for web video,
+    and constant framerate.
 
-    pbar.close()
-    f.close()
+    Parameters
+    ----------
+    source : str or DataFrame
+        A pandas DataFrame, a path to .csv file, or a Glob pattern to 
+        match multiple files (use *)
+    output : str, default 'output'
+        Name of the output folder to save converted videos
+    trim : bool, default False
+        Trim video files to match the initial seach query
+    deinterlace : bool, default False
+        Deinterlace video.
+    crf : int, defalt None
+        Set CRF (quality level) in ffmpeg. The default will use the
+        default value from ffmpeg.
+    keep_audio : bool, default False
+        Keep audio in the video? Default is to remove de audio.
+    yuv420 : bool, defalt False
+        Force YUV planar color space with 4:2:0 chroma subsampling.
+        May be needed to display video in some players/browsers.
+    h265 : bool, defalt False
+        Use H.265 encoding instead of H.264. H.265 offers a higher
+        compression, but may not be supported by some players/browsers.
+    """
+
+    header = 'filename,video_filename,timestamp\n'
+
+    # video filter
+    vf_cmd = 'fps=source_fps' # force constant frame rate
+
+    if deinterlace:
+        vf_cmd = 'pp=ci|a,' + vf_cmd
+
+    if yuv420:
+        vf_cmd = vf_cmd + ',format=yuv420p'
+
+    crfv = [] if crf is None else ['-crf', str(crf)]
+
+    encoder = 'libx265' if h265 else 'libx264'
+
+    audio = ['-c:a', 'aac', '-b:a', '128k'] if keep_audio else ['-an']
+
+    params = ['-vf', vf_cmd, '-c:v', encoder,
+        'preset', 'slow'] + crfv + audio + ['-movflags', '+faststart']
+
+    # run loop
+    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_mp4, params)
