@@ -70,7 +70,7 @@ def video_info(source, output='video_info.csv', check_interlaced=False):
 
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
         match multiple files (use *)
     output : str, default 'video_info.csv'

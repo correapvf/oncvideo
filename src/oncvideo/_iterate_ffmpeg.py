@@ -50,43 +50,45 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params):
 
     pbar = tqdm(total=df.shape[0], desc = 'Processed files')
 
-    for name, group in df.groupby('group'):
+    try:
+        for name, group in df.groupby('group'):
 
-        if has_group:
-            outfolder = folder / Path(name)
-            outfolder.mkdir(exist_ok=True)
-            subfolder = name + ','
-        else:
-            outfolder = folder
-            subfolder = ''
-
-        group = group.copy()
-        group['video_filename'] =  group['filename'].copy()
-        group['skip'] = [[]] * len(group)
-
-        if trim:
-            group = trim_group(group)
-
-        # convert each file in the group
-        for _, row in group.iterrows():
-
-            output_file = outfolder / Path(row['filename'])
-
-            if need_download:
-                tmpfile = tempfile.gettempdir() / Path(row['filename'])
-                success = download_file(row['urlfile'], tmpfile)
-                if not success:
-                    continue
+            if has_group:
+                outfolder = folder / Path(name)
+                outfolder.mkdir(exist_ok=True)
+                subfolder = name + ','
             else:
-                tmpfile = row['urlfile']
+                outfolder = folder
+                subfolder = ''
 
-            ffmpeg_run(tmpfile, output_file, row['skip'], params, f,
-                subfolder, row['video_filename'])
+            group = group.copy()
+            group['video_filename'] =  group['filename'].copy()
+            group['skip'] = [[]] * len(group)
 
-            if need_download:
-                tmpfile.unlink()
+            if trim:
+                group = trim_group(group)
 
-            pbar.update()
+            # convert each file in the group
+            for _, row in group.iterrows():
 
-    pbar.close()
-    f.close()
+                output_file = outfolder / Path(row['filename'])
+
+                if need_download:
+                    tmpfile = tempfile.gettempdir() / Path(row['filename'])
+                    success = download_file(row['urlfile'], tmpfile)
+                    if not success:
+                        continue
+                else:
+                    tmpfile = row['urlfile']
+
+                ffmpeg_run(tmpfile, output_file, row['skip'], params, f,
+                    subfolder, row['video_filename'])
+
+                if need_download:
+                    tmpfile.unlink()
+
+                pbar.update()
+
+    finally:
+        pbar.close()
+        f.close()

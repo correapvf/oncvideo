@@ -28,7 +28,7 @@ def download_files(source, output='output', trim=False):
 
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, or a path to .csv file
     output : str, default 'output'
         Name of the output folder to save converted videos
@@ -75,7 +75,7 @@ def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
 
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to 
         match multiple files (use *)
     output : str, default 'output'

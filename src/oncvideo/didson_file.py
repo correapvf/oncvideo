@@ -194,7 +194,7 @@ def read_ddf(urlfile):
     return time, out
 
 
-def didson_info(file_out, output='DIDSON_info.csv'):
+def didson_info(source, output='DIDSON_info.csv'):
     """
     Get information from DIDSON file
 
@@ -203,15 +203,13 @@ def didson_info(file_out, output='DIDSON_info.csv'):
     distance from first sample to the last).
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
         match multiple files (use *)
-    output : str, default 'video_info.csv'
+    output : str, default 'DIDSON_info.csv'
         Name of the csv file to save video information
-    check_interlaced : bool, default False
-        Use the idet filter from ffmpeg to check if video is interlaced.
     """
-    df, has_group, _ = parse_file_path(file_out)
+    df, has_group, _ = parse_file_path(source)
 
     # configure csv
     header = ('filename,PCtimeFrom,PCtimeTo,SonartimeFrom,SonartimeTo,'

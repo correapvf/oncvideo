@@ -3,18 +3,8 @@ from pathlib import Path
 import tempfile
 from tqdm import tqdm
 import pandas as pd
-from ._utils import name_to_timestamp, download_file, to_timedelta, parse_file_path, run_ffmpeg
+from ._utils import name_to_timestamp, download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
-
-
-def strftd2(td):
-    """
-    Convert timedelta to mm:ss format
-    """
-    nseconds = td.total_seconds()
-    minutes, seconds = divmod(nseconds, 60)
-    return f"{minutes:02.0f}-{seconds:02.0f}"
-
 
 def ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video_name):
     """
@@ -70,7 +60,7 @@ def extract_frame(source, interval, output='frames', trim=False,
 
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
         match multiple files (use *)
     interval : float
@@ -121,13 +111,13 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
     Parameters
     ----------
-    source : str or DataFrame
+    source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
         match multiple files (use *)
     timestamps : str, float, or list
         A timestamp or a list of timestaps where the framegrabs will be extracted.
         Can be a float indicating the number of seconds or a string in the format
-        mm:ss, from the start of the video. If None (the default), it will try to
+        mm:ss.f, from the start of the video. If None (the default), it will try to
         get the timestamps from the column 'fovs' in the source.
     duration : float
         If provided, the function will get clips instead of framegrabs, with
@@ -178,78 +168,80 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
     # start for loop
     pbar = tqdm(total=df.shape[0], desc = 'Processed files')
 
-    for name, group in df.groupby('group'):
+    try:
+        for name, group in df.groupby('group'):
 
-        if has_group:
-            outfolder = folder / Path(name)
-            outfolder.mkdir(exist_ok=True)
-        else:
-            outfolder = folder
-
-        # Create folder for each FOV
-        if fov_csv:
-            maxfov = group['fovs'].apply(len).max()
-            fovs = [f'FOV{y+1}' for y in list(range(maxfov))]
-
-            for fov in fovs:
-                p = outfolder / Path(fov)
-                p.mkdir(exist_ok=True)
-        else:
-            for fov in fovfolder:
-                p = outfolder / Path(fov)
-                p.mkdir(exist_ok=True)
-
-        # extract frames for each video
-        for _, row in group.iterrows():
-            # download video
-            file_name_p = Path(row['filename'])
-            if need_download:
-                tmpfile = tempfile.gettempdir() / file_name_p
-                download_file(row['urlfile'], tmpfile)
-                tmpfile_str = str(tmpfile)
-            else:
-                tmpfile_str = row['urlfile']
-
-            # get timestamp of file
-            timestamp = name_to_timestamp(file_name_p.name)
-            oldname_dc = timestamp.dc
-
-            # Extract frame/video for each FOV
-            filename_fovs = []
-            for fov, p in zip(row['fovs'], row['subfolder']):
-
-                if fov == '':
-                    filename_fovs.append(new_name.name)
-                    continue
-
-                newtime = (timestamp + fov).strftime('%Y%m%dT%H%M%S.%f')[:-3]
-                filename = f"{oldname_dc}_{newtime}Z{file_name_p.suffix}"
-                new_name_p = Path(filename)
-
-                if duration is None:
-                    new_name = outfolder / p / new_name_p.with_suffix('.jpg')
-                    ff_cmd = ['ffmpeg', '-ss', fov.total_seconds(), '-i',
-                        tmpfile_str] + vf_cmd + ['-frames:v', '1', '-update', '1',
-                        '-qmin', '1', '-qmax', '1', '-q:v', '1', new_name]
-
-                else:
-                    new_name = outfolder / p / new_name_p
-                    ff_cmd =['ffmpeg', '-ss', fov.total_seconds(),
-                        '-i', tmpfile_str, '-t', duration, '-c', 'copy', new_name]
-
-                run_ffmpeg(ff_cmd, filename=new_name.name)
-                filename_fovs.append(new_name.name)
-
-            if need_download:
-                tmpfile.unlink()
-
-            # save csv with video name
             if has_group:
-                f.write(f"{name},{row['filename']},{','.join(filename_fovs)}\n")
+                outfolder = folder / Path(name)
+                outfolder.mkdir(exist_ok=True)
             else:
-                f.write(f"{row['filename']},{','.join(filename_fovs)}\n")
+                outfolder = folder
 
-            pbar.update()
+            # Create folder for each FOV
+            if fov_csv:
+                maxfov = group['fovs'].apply(len).max()
+                fovs = [f'FOV{y+1}' for y in list(range(maxfov))]
 
-    pbar.close()
-    f.close()
+                for fov in fovs:
+                    p = outfolder / Path(fov)
+                    p.mkdir(exist_ok=True)
+            else:
+                for fov in fovfolder:
+                    p = outfolder / Path(fov)
+                    p.mkdir(exist_ok=True)
+
+            # extract frames for each video
+            for _, row in group.iterrows():
+                # download video
+                file_name_p = Path(row['filename'])
+                if need_download:
+                    tmpfile = tempfile.gettempdir() / file_name_p
+                    download_file(row['urlfile'], tmpfile)
+                    tmpfile_str = str(tmpfile)
+                else:
+                    tmpfile_str = row['urlfile']
+
+                # get timestamp of file
+                timestamp = name_to_timestamp(file_name_p.name)
+                oldname_dc = timestamp.dc
+
+                # Extract frame/video for each FOV
+                filename_fovs = []
+                for fov, p in zip(row['fovs'], row['subfolder']):
+
+                    if fov == '':
+                        filename_fovs.append(new_name.name)
+                        continue
+
+                    newtime = (timestamp + fov).strftime('%Y%m%dT%H%M%S.%f')[:-3]
+                    filename = f"{oldname_dc}_{newtime}Z{file_name_p.suffix}"
+                    new_name_p = Path(filename)
+
+                    if duration is None:
+                        new_name = outfolder / p / new_name_p.with_suffix('.jpg')
+                        ff_cmd = ['ffmpeg', '-ss', fov.total_seconds(), '-i',
+                            tmpfile_str] + vf_cmd + ['-frames:v', '1', '-update', '1',
+                            '-qmin', '1', '-qmax', '1', '-q:v', '1', new_name]
+
+                    else:
+                        new_name = outfolder / p / new_name_p
+                        ff_cmd =['ffmpeg', '-ss', fov.total_seconds(),
+                            '-i', tmpfile_str, '-t', duration, '-c', 'copy', new_name]
+
+                    run_ffmpeg(ff_cmd, filename=new_name.name)
+                    filename_fovs.append(new_name.name)
+
+                if need_download:
+                    tmpfile.unlink()
+
+                # save csv with video name
+                if has_group:
+                    f.write(f"{name},{row['filename']},{','.join(filename_fovs)}\n")
+                else:
+                    f.write(f"{row['filename']},{','.join(filename_fovs)}\n")
+
+                pbar.update()
+
+    finally:
+        pbar.close()
+        f.close()

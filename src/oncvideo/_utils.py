@@ -30,6 +30,15 @@ def strftd(nseconds):
     return f"{hours:02.0f}:{minutes:02.0f}:{seconds:06.3f}"
 
 
+def strftd2(td):
+    """
+    Convert timedelta to mm:ss format
+    """
+    nseconds = td.total_seconds()
+    minutes, seconds = divmod(nseconds, 60)
+    return f"{minutes:02.0f}-{seconds:02.0f}"
+
+
 @backoff.on_exception(
     backoff.expo,
     requests.exceptions.RequestException,
@@ -95,6 +104,15 @@ def name_to_timestamp(filename):
     return r1
 
 
+def name_to_timestamp_dc(filename):
+    """
+    Wrapper for name_to_timestamp to return deviceCode and
+    timestamp as separate variables
+    """
+    x = name_to_timestamp(filename)
+    return x, x.dc
+
+
 def to_timedelta(x):
     """
     Convert number of seconds to pandas.Timedelta object
@@ -145,20 +163,23 @@ def trim_group(group):
     return group
 
 
-def parse_file_path(source):
+def parse_file_path(source, check=True):
     """
     Return a pandas.DataFrame according to the source
     """
     if isinstance(source, pd.DataFrame):
+        if not 'filename' in source.columns and check:
+            raise ValueError("Input csv must have column 'filename'")
         has_group = 'group' in source.columns
+        source['urlfile'] = URL + source['filename']
         return source, has_group, True
 
     path = Path(source)
 
     if path.is_file():
         if path.suffix == '.csv':
-            df = pd.read_csv(path, comment = "#")
-            if not 'filename' in df.columns:
+            df = pd.read_csv(path)
+            if not 'filename' in df.columns and check:
                 raise ValueError("Input csv must have column 'filename'")
             df['urlfile'] = URL + df['filename']
             need_download = True

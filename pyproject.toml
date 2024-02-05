@@ -30,4 +30,4 @@ classifiers = [
 Repository = "https://github.com/correapvf/oncvideo"
 
 [project.scripts]
-oncvideo = arg_parser:main
+oncvideo = "oncvideo.arg_parser:main"

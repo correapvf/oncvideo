@@ -30,6 +30,7 @@ def get_dives(onc, add_location=True):
         ['children', 'children', 'html'],
         ['children', 'children', 'children', 'html']])
 
+    df["ready"].fillna(False, inplace=True)
     df = df[df["ready"]]
     new = df["html"].str.split(" - ", n = 2, expand = True)
 
