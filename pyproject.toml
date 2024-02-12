@@ -23,7 +23,10 @@ readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
   "Development Status :: 4 - Beta",
-  "Programming Language :: Python"
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT",
+  'Intended Audience :: Science/Research',
+  'Topic :: Scientific/Engineering :: Oceanography'
 ]
 
 [project.urls]
@@ -31,3 +34,11 @@ Repository = "https://github.com/correapvf/oncvideo"
 
 [project.scripts]
 oncvideo = "oncvideo.arg_parser:main"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+addopts = [
+    "--import-mode=importlib",
+]

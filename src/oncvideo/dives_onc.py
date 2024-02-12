@@ -1,24 +1,23 @@
 """Get a table with all ROV dives from SeaTube V3"""
 import json
+from datetime import datetime, timedelta
+from pathlib import Path
 import requests
 import pandas as pd
 
-def get_dives(onc, add_location=True):
+def check_time(dives):
     """
-    Return all dives from Oceans3.0
+    Check if file as modify less than 30 days ago
+    """
+    modify_timestamp = dives.stat().st_mtime
+    modify_date = datetime.fromtimestamp(modify_timestamp)
+    timediff = datetime.now() - modify_date
+    return timediff < timedelta(days=30)
 
-    Parameters
-    ----------
-    onc : onc.ONC
-        ONC class object
-    add_location : bool, default True
-        Get locationCodes from the dives as well.
 
-    Returns
-    -------
-    pandas.DataFrame
-        A DataFrame that includes dives code, start and end times
-        for the dive, deviceCode and deviceId.
+def get_dives_api(onc):
+    """
+    function to get dives table from Seatube V3
     """
     # get table with all dives
     url = 'https://data.oceannetworks.ca/expedition/tree'
@@ -52,16 +51,48 @@ def get_dives(onc, add_location=True):
     devices = devices[['deviceCode', 'deviceId', 'deviceName']]
 
     df = pd.merge(df, devices, how="left", on="deviceId")
+
+    # get locations code
+    data = onc.getDeployments(filters)
+    locations = pd.DataFrame(data)
+    locations = locations[['deviceCode', 'locationCode']]
+    locations.drop_duplicates(inplace=True)
+
+    df = pd.merge(df, locations, how="left", on="deviceCode")
+
     cols = ['dive','organization','year','expedition','startDate','endDate','id','deviceId',
-            'deviceCode','deviceName']
-
-    if add_location:
-        data = onc.getDeployments(filters)
-        locations = pd.DataFrame(data)
-        locations = locations[['deviceCode', 'locationCode']]
-        locations.drop_duplicates(inplace=True)
-
-        df = pd.merge(df, locations, how="left", on="deviceCode")
-        cols = cols + ['locationCode','location']
+        'deviceCode','deviceName','locationCode','location']
 
     return df[cols]
+
+
+def get_dives(onc, cache=True):
+    """
+    Return all dives from Oceans3.0
+
+    Parameters
+    ----------
+    onc : onc.ONC
+        ONC class object
+    cache : bool, default True
+        Save file at home folder and use it for future calls if the
+        file is recent (less the 30 days).
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame that includes dives code, start and end times
+        for the dive, deviceCode and locationCode.
+    """
+    dives = Path.home() / ".dives_ONC.csv"
+
+    if cache and dives.is_file() and check_time(dives):
+        df = pd.read_csv(dives)
+
+    else:
+        # get a new dive file
+        df = get_dives_api(onc)
+        if cache:
+            df.to_csv(dives, index=False)
+
+    return df

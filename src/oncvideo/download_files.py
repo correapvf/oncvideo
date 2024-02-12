@@ -42,7 +42,7 @@ def download_files(source, output='output', trim=False):
 
     params = ['-c', 'copy']
 
-    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_download, params)
+    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_download, params, True)
 
 
 def ffmpeg_run_mp4(input_file, output_file, skip, params, f, subfolder, video_name):
@@ -112,10 +112,10 @@ def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
 
     encoder = 'libx265' if h265 else 'libx264'
 
-    audio = ['-c:a', 'aac', '-b:a', '128k'] if keep_audio else ['-an']
+    audio = ['-c:a', 'aac', '-b:a', '128k'] if keep_audio else ['-an', '-sn']
 
     params = ['-vf', vf_cmd, '-c:v', encoder,
-        'preset', 'slow'] + crfv + audio + ['-movflags', '+faststart']
+        '-preset', 'slow'] + crfv + audio + ['-movflags', '+faststart']
 
     # run loop
     iterate_ffmpeg(source, output, header, trim, ffmpeg_run_mp4, params)

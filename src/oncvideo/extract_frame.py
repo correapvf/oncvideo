@@ -18,7 +18,7 @@ def ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video_
 
     # Create ffmpeg command and run
     ff_cmd = ['ffmpeg'] + skip + ['-i', input_file] + params['ffmpeg'] + [output_file]
-    run_ffmpeg(ff_cmd, filename=output_file.name)
+    run_ffmpeg(ff_cmd, filename=file_name)
 
     # rename frames to correct timestamp
     d = outfolder.glob(file_name + "_*.jpg")
@@ -47,7 +47,7 @@ def ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video_
         else:
             dout = dout[['filename', 'video_filename', 'timestamp']]
 
-        dout.to_csv(f, mode='a', index=False, header=False)
+        dout.to_csv(f, mode='a', index=False, header=False, lineterminator='\n')
     else:
         with open("log_download.txt", 'a', encoding="utf-8") as ferr:
             ferr.write(f"No frame was extracted from: {input_file.name}\n")
@@ -147,9 +147,9 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
         if not isinstance(timestamps, list):
             timestamps = [timestamps]
         fovs = [to_timedelta(x) for x in timestamps]
-        df['fovs'] = fovs
+        df['fovs'] = [fovs for _ in range(len(df))]
         fovfolder = [f'FOV_{strftd2(x)}' for x in fovs]
-        df['subfolder'] = fovfolder
+        df['subfolder'] = [fovfolder for _ in range(len(df))]
 
     # header for the output csv
 
@@ -216,16 +216,17 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
                     newtime = (timestamp + fov).strftime('%Y%m%dT%H%M%S.%f')[:-3]
                     filename = f"{oldname_dc}_{newtime}Z{file_name_p.suffix}"
                     new_name_p = Path(filename)
+                    fov_str = str(fov.total_seconds())
 
                     if duration is None:
                         new_name = outfolder / p / new_name_p.with_suffix('.jpg')
-                        ff_cmd = ['ffmpeg', '-ss', fov.total_seconds(), '-i',
+                        ff_cmd = ['ffmpeg', '-ss', fov_str, '-i',
                             tmpfile_str] + vf_cmd + ['-frames:v', '1', '-update', '1',
                             '-qmin', '1', '-qmax', '1', '-q:v', '1', new_name]
 
                     else:
                         new_name = outfolder / p / new_name_p
-                        ff_cmd =['ffmpeg', '-ss', fov.total_seconds(),
+                        ff_cmd =['ffmpeg', '-ss', fov_str,
                             '-i', tmpfile_str, '-t', duration, '-c', 'copy', new_name]
 
                     run_ffmpeg(ff_cmd, filename=new_name.name)

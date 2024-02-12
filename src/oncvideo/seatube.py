@@ -75,12 +75,13 @@ def st_download(onc, url, ext='mov', ext_frame=False):
     download_file(urlfile, Path(tmp['filename']))
 
     if ext_frame:
-        ss = (tmp['ts'] - tmp['file_ts']).total_seconds()
+        ss = tmp['ts'] - tmp['file_ts']
+        ss_str = str(ss.total_seconds())
 
         timestamp_str = timestamp.strftime('%Y%m%dT%H%M%S.%f')[:-3]+'Z'
         new_name = f"{filters['deviceCode']}_{timestamp_str}.jpg"
 
-        ff_cmd = ['ffmpeg', '-ss', str(ss), '-i', tmp['filename']] + ['-frames:v', '1',
+        ff_cmd = ['ffmpeg', '-ss', ss_str, '-i', tmp['filename']] + ['-frames:v', '1',
             '-update', '1', '-qmin', '1', '-qmax', '1', '-q:v', '1', new_name]
         run_ffmpeg(ff_cmd, filename=tmp['filename'])
 
@@ -122,9 +123,17 @@ def st_link(onc, source):
         The dataFrame from source, with new column `url` with corresponding
         Seatube links.
     """
-    df, _, _ = parse_file_path(source)
-    df.drop(columns='urlfile', inplace=True)
+    if '*' in source or source.endswith('.csv'):
+        df, _, _ = parse_file_path(source)
+        df.drop(columns='urlfile', inplace=True)
+    else:
+        if not '.' in source:
+            raise ValueError("Source must be a valid name with extension.")
+        df = pd.DataFrame({'filename': [source]}, index=[0])
     ts_bk = None
+
+    index = df['filename'].str.count('\\.') == 1
+    df.loc[index, 'filename'] = df['filename'].str.replace('.', '.000Z.', regex=False)
 
     if 'filename' in df:
         df[['ts', 'dc']] = df['filename'].apply(name_to_timestamp_dc).to_list()
@@ -136,13 +145,9 @@ def st_link(onc, source):
         else:
             df.rename(columns={'ts': 'timestamp'}, inplace=True)
 
-    index = df['filename'].str.count('\\.') == 1
-    df.loc[index, 'filename'] = df['filename'].str.replace('.', '.000Z.', regex=False)
-
-    df[['timestamp', 'dc']] = df['filename'].apply(name_to_timestamp_dc).to_list()
     df.sort_values(['dc', 'filename'], inplace=True)
 
-    dives = get_dives(onc, False)
+    dives = get_dives(onc)
     dives = dives[['deviceCode','id','startDate','endDate']]
     dives = dives[dives['deviceCode'].isin(df['dc'].unique())]
 
@@ -152,10 +157,10 @@ def st_link(onc, source):
         dives.sort_values('startDate', inplace=True)
 
         df = pd.merge_asof(df, dives, left_on='timestamp', right_on='startDate')
-        df['timediff'] = (df['endDate'] - df['ts']).total_seconds() > 0
+        df['timediff'] = (df['endDate'] - df['timestamp']).dt.total_seconds() > 0
 
         df['url'] = df.apply(lambda x: generate_link(x.timediff, x.id, x.timestamp), axis=1)
-        df.drop(['deviceCode','id','startDate','endDate'], inplace=True)
+        df.drop(columns=['deviceCode','id','startDate','endDate','timediff'], inplace=True)
 
     else:
         df['url'] = ''
@@ -195,8 +200,8 @@ def st_rename(filename):
             offset = int(offset)
             if 1 <= offset <= 9:
                 offset = offset - 5
-                timestamp = timestamp + pd.to_timedelta(offset, unit='sec')
-                ts = timestamp.strftime('%Y%m%dT%H%M%S.%f')[:-3]
+                ts = timestamp + pd.to_timedelta(offset, unit='sec')
+                ts = ts.strftime('%Y%m%dT%H%M%S.%f')[:-3]
                 suffix = filename.split('.')[-1]
                 newname = f"{timestamp.dc}_{ts}Z.{suffix}"
     return newname

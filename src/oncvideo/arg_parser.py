@@ -64,7 +64,7 @@ def fgetdives(args):
     use get_dives and save output
     """
     onc_ob = onc(args.token)
-    df = get_dives(onc_ob, args.nolocation)
+    df = get_dives(onc_ob, False)
     df.to_csv(args.output, index=False)
 
 
@@ -121,7 +121,8 @@ def fdownloadts(args):
     run download_ts function
     """
     onc_ob = onc(args.token)
-    download_ts(onc_ob, args.source, args.category_code, args.output,
+    args.deviceCategoryCode = args.deviceCategoryCode.split(",")
+    download_ts(onc_ob, args.source, args.deviceCategoryCode, args.output,
         args.raw, args.merge, tolerance=args.tolerance, units=args.units)
 
 
@@ -146,15 +147,9 @@ def flinkst(args):
     """
     onc_ob = onc(args.token)
 
-    do_print = False
-    path = Path(args.source)
-    if path.is_file():
-        if path.suffix != '.csv':
-            do_print = True
-
     df = st_link(onc_ob, args.source)
 
-    if do_print:
+    if df.shape[0] == 1:
         print(df['url'].iloc[0])
     else:
         df.to_csv(args.output, index=False)
@@ -171,7 +166,7 @@ def frenamest(args):
         f.rename(newname)
 
 
-def main():
+def main(args=None):
     """
     Create parser for arguments
     """
@@ -197,9 +192,9 @@ def main():
         '-lc', '--locationCode', help='Get videos from a specific Location')
     group_list.add_argument('-dive', help='Get videos from a specific Dive')
 
-    subparser_list.add_argument('-dcc', '--deviceCategoryCode', default='ask',
+    subparser_list.add_argument('-dcc', '--deviceCategoryCode', default='VIDEOCAM',
         help="Only used for locationCode. Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' \
-        for ROVs. 'ask' will list avaiable options and ask user to choose one.")
+        for ROVs. 'ask' will list avaiable options and ask user to choose one. Default 'VIDEOCAM'")
     subparser_list.add_argument('-from',
         '--dateFrom', help='Return videos after specified time, as yyyy-mm-ddTHH:MM:SS.sssZ')
     subparser_list.add_argument('-to',
@@ -244,8 +239,6 @@ def main():
     subparser_dives.add_argument('-t', '--token', help='API token')
     subparser_dives.add_argument('-o', '--output', default="dives.csv",
                                  help="File name to output dives. Default 'dives.csv'")
-    subparser_dives.add_argument('-l', '--nolocation', action="store_false",
-                                 help='Do not get locationCodes from dives')
     subparser_dives.set_defaults(func=fgetdives)
 
     # getInfo
@@ -294,7 +287,7 @@ def main():
         help='Keep audio in the video.')
     subparser_tomp4.add_argument('-y', '--yuv420', action="store_true",
         help='Force YUV420 color space.')
-    subparser_tomp4.add_argument('-h', '--h265', action="store_true",
+    subparser_tomp4.add_argument('-p', '--h265', action="store_true",
         help='Use H.265 encoding instead of H.264.')
     subparser_tomp4.set_defaults(func=ftomp4)
 
@@ -319,7 +312,7 @@ def main():
     subparser_extframe = subparsers.add_parser(
         'extfov', help="Extract FOVs (frames or videos) from video files")
     subparser_extframe.add_argument('source', help=help_input)
-    subparser_extframe.add_argument('-t', '--timestamps',
+    subparser_extframe.add_argument('-s', '--timestamps',
         help="Get frames at the specific timestamps, in seconds or mm:ss.f format.\
         Can be a comma separated list to extract multiple FOVs.\
         If 'durations' is suplied, will extract videos starting at each timestamp.")
@@ -337,7 +330,7 @@ def main():
         'downloadTS', help="Donwload timeseries data that corresponds to the same \
         time period as the video files")
     subparser_downloadts.add_argument('source', help=help_input)
-    subparser_downloadts.add_argument('-dcc', '--deviceCategoryCode', required=True,
+    subparser_downloadts.add_argument('deviceCategoryCode',
         help="Category Code of data to download. E.g. NAV, CTD, OXYSENSOR, etc. \
         Can be a comma separated list.")
     subparser_downloadts.add_argument('-t', '--token', help='API token')
@@ -395,13 +388,9 @@ def main():
         multiple files (use *).")
     subparser_renamest.set_defaults(func=frenamest)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     args.func(args)
 
-
-# TO DO
-# test script
-# download_ts(onc, '../test/videos_download.csv', category_code=['NAV','CTD'], out_merged='test.csv')
 
 if __name__ == '__main__':
     main()

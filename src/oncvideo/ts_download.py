@@ -3,6 +3,7 @@ import os
 import sys
 import re
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import pandas as pd
 from ._utils import name_to_timestamp_dc, parse_file_path
@@ -21,7 +22,7 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
-def download_ts_helper(df, onc, category_code, clean, f, fo):
+def download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
     """
     Helper function to download time series data
     """
@@ -34,78 +35,92 @@ def download_ts_helper(df, onc, category_code, clean, f, fo):
     df['gap'] = (df.groupby('dc')['timestamp'].diff() > pd.Timedelta(1, "d")).cumsum()
 
     # start for loop
-    nloop = len(df.value_counts(['dc','gap']))
-    pbar = tqdm(total=nloop, desc = 'Processed files')
+    nloop = 0
+    futures = []
 
-    for name, group in df.groupby(['dc', 'gap']):
+    with ThreadPoolExecutor(max_workers=nworkers) as executor:
 
-        date_from = group['timestamp'].iloc[0] - pd.Timedelta(10, "min")
-        date_from = date_from.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-        date_to = group['timestamp'].iloc[-1] + pd.Timedelta(25, "min")
-        date_to = date_to.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        for name, group in df.groupby(['dc', 'gap']):
 
-        date_o_from = str(group['timestamp'].iloc[0])[:-6]
-        date_o_to = str(group['timestamp'].iloc[-1])[:-6]
+            date_from = group['timestamp'].iloc[0] - pd.Timedelta(10, "min")
+            date_from = date_from.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+            date_to = group['timestamp'].iloc[-1] + pd.Timedelta(25, "min")
+            date_to = date_to.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
-        filters = {
-                    'deviceCode': name[0],
-                    'dateFrom'  : date_from,
-                    'dateTo'    : date_to
-                }
-        result = onc.getLocations(filters)
+            date_o_from = str(group['timestamp'].iloc[0])[:-6]
+            date_o_to = str(group['timestamp'].iloc[-1])[:-6]
 
-
-        # sanity check. Only one locationCode should be retrieved
-        if len(result) > 1:
-            raise RuntimeWarning("More than one location found for and deviceCode",
-                name[0], " between ", date_from, " and ", date_to)
-        location_code = result[0]['locationCode']
-
-        location_code = location_code.split('.')
-        if len(location_code) > 1:
-            result2 = onc.getLocationHierarchy({'locationCode': location_code[0]})
-            location_code = [x['locationCode'] for x in result2]
+            filters = {
+                        'deviceCode': name[0],
+                        'dateFrom'  : date_from,
+                        'dateTo'    : date_to
+                    }
+            result = onc.getLocations(filters)
 
 
-        for lc in location_code:
-            for cc in category_code:
-                filters = {
-                    'locationCode': lc,
-                    'deviceCategoryCode': cc,
-                    'dateFrom'  : date_from,
-                    'dateTo'    : date_to,
-                    "dataProductCode": "TSSD",
-                    "extension" : "csv",
-                    'dpo_qualityControl': clean,
-                    'dpo_resample': 'none',
-                    'dpo_dataGaps': 0
-                }
+            # sanity check. Only one locationCode should be retrieved
+            if len(result) > 1:
+                raise RuntimeWarning("More than one location found for deviceCode",
+                    name[0], " between ", date_from, " and ", date_to)
+            location_code = result[0]['locationCode']
 
-                if fo is not None:
-                    r = fo.loc[(fo['deviceCode']==name[0]) & (fo['dateFrom']==date_o_from) &
-                        (fo['dateTo']==date_o_to) & (fo['locationCode']==lc) &
-                        (fo['deviceCategoryCode']==cc)]
-                    if r.shape[0] > 0:
-                        continue
+            location_code = location_code.split('.')
+            if len(location_code) > 1:
+                result2 = onc.getLocationHierarchy({'locationCode': location_code[0]})
+                location_code = [x['locationCode'] for x in result2]
 
-                if cc == 'NAV':
-                    filters['dpo_includeOrientationSensors'] = 'True'
+            nloop += len(location_code) * len(category_code)
+            for lc in location_code:
+                for cc in category_code:
+                    filters = {
+                        'locationCode': lc,
+                        'deviceCategoryCode': cc,
+                        'dateFrom'  : date_from,
+                        'dateTo'    : date_to,
+                        "dataProductCode": "TSSD",
+                        "extension" : "csv",
+                        'dpo_qualityControl': clean,
+                        'dpo_resample': 'none',
+                        'dpo_dataGaps': 0
+                    }
 
-                try:
-                    with HiddenPrints():
-                        result3 = onc.orderDataProduct(filters, includeMetadataFile=False)
+                    if fo is not None:
+                        r = fo.loc[(fo['deviceCode']==name[0]) & (fo['dateFrom']==date_o_from) &
+                            (fo['dateTo']==date_o_to) & (fo['locationCode']==lc) &
+                            (fo['deviceCategoryCode']==cc)]
+                        if r.shape[0] > 0:
+                            continue
 
-                    for file in result3['downloadResults']:
-                        # write in csv file
-                        f.write(f"{name[0]},{date_o_from},{date_o_to},{lc},{cc},{file['file']}\n")
-                except Exception:
-                    pass
+                    if cc == 'NAV':
+                        filters['dpo_includeOrientationSensors'] = 'True'
 
-        pbar.update()
+                    to_write = f"{name[0]},{date_o_from},{date_o_to},{lc},{cc}"
+
+                    futures.append(executor.submit(execute_download, onc, filters, f, to_write))
+
+        pbar = tqdm(total=nloop, desc = 'Processed files')
+        for _ in as_completed(futures):
+            pbar.update()
+        pbar.close()
+
+
+def execute_download(onc, filters, f, to_write):
+    """
+    function passed to thread
+    """
+    try:
+        with HiddenPrints():
+            result3 = onc.orderDataProduct(filters, includeMetadataFile=False)
+
+        for file in result3['downloadResults']:
+            # write in csv file
+            f.write(f"{to_write},{file['file']}\n")
+    except Exception:
+        pass
 
 
 def download_ts(onc, source, category_code, output='output',
-    clean=True, out_merged=False, **kwargs):
+    clean=True, out_merged=False, nworkers=20, **kwargs):
     """
     Donwload timeseries data for video files
 
@@ -130,6 +145,8 @@ def download_ts(onc, source, category_code, output='output',
     out_merged : bool, default False
         If True, the function :func:`~oncvideo.merge_ts` will run automatically
         after tssd is downloaded and save the merged file as `{output}_merged.csv`.
+    nworkers : int, default 20
+        Number of simultaneous API calls to make
     **kwargs
         `tolerance` and `units` passed to :func:`~oncvideo.merge_ts`
 
@@ -163,12 +180,13 @@ def download_ts(onc, source, category_code, output='output',
         f = open(file_out, "a", encoding="utf-8")
     else:
         fo = None
+        file_out.parent.mkdir(exist_ok=True)
         f = open(file_out, "w", encoding="utf-8")
         f.write("deviceCode,dateFrom,dateTo,locationCode,deviceCategoryCode,downloaded\n")
 
     # download files
     try:
-        download_ts_helper(df, onc, category_code, clean, f, fo)
+        download_ts_helper(df, onc, category_code, clean, f, fo, nworkers)
 
     finally:
         f.close()
@@ -184,7 +202,9 @@ def merge_ts_helper(data, tmp, tolerance):
     """
     Helper function to merge data based on timestamps
     """
-    tmp = pd.merge_asof(tmp, data, left_on='timestamp', right_on='Time_UTC',
+    data.set_index('Time_UTC', inplace=True)
+    data.interpolate(method='time', axis=0, inplace=True, limit_area='inside')
+    tmp = pd.merge_asof(tmp, data, left_on='timestamp', right_index=True,
         suffixes=('', '_NEW'), tolerance=pd.Timedelta(tolerance, 's'), direction='nearest')
 
     cnames = tmp.columns.to_list()
@@ -194,7 +214,6 @@ def merge_ts_helper(data, tmp, tolerance):
         cname = cname_new[:-4]
         tmp[cname] = tmp[cname].combine_first(tmp[cname_new])
 
-    cnames_new = ['Time_UTC'] + cnames_new
     tmp.drop(columns=cnames_new, inplace=True)
 
     return tmp
@@ -218,8 +237,8 @@ def read_ts(file, units=True):
     
     """
     # Read the first 100 lines
-    with open(file, 'r', encoding="utf-8") as file:
-        r = [next(file) for _ in range(100)]
+    with open(file, 'r', encoding="utf-8") as f:
+        r = [next(f) for _ in range(100)]
 
     # Find the index of '## END HEADER'
     n = next(i for i, line in enumerate(r) if '## END HEADER' in line) + 1

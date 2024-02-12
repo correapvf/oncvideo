@@ -1,6 +1,7 @@
 """ Multiple helper functions used for the package"""
 from pathlib import Path
 import requests
+import numpy as np
 import pandas as pd
 import backoff
 from tqdm import tqdm
@@ -130,26 +131,29 @@ def trim_group(group):
     Create ss and to paramenters to be passed to ffmpeg
     when trim is needed
     """
-    if '/' in group['query_offset'].iloc[0]:
+    ss = group['query_offset'].iloc[0]
+    if ss is not np.nan and '/' in ss:
         ss, to = group['query_offset'].iloc[0].split('/')
         do_both = True
     else:
-        ss = group['query_offset'].iloc[0]
         to = group['query_offset'].iloc[-1]
         do_both = False
 
-    ss_valid = not '-' in ss
-    to_valid = not '-' in to
+    ss_valid = ss is not np.nan and 'start' in ss
+    to_valid = to is not np.nan and 'end' in to
+
+    if to_valid:
+        to = to.split(' ')[-1]
 
     # set filename with the time added
     if ss_valid:
+        ss = ss.split(' ')[-1]
         timeadd = pd.to_timedelta(ss)
 
         ts = name_to_timestamp(group['filename'].iloc[0])
-        newtime = newtime + timeadd
+        newtime = (ts + timeadd).strftime('%Y%m%dT%H%M%S.%f')[:-3]+'Z'
         newname = f"{ts.dc}_{newtime}{ts.ext}"
 
-    if ss_valid:
         index0 = group.index[0]
         group.loc[index0, 'filename'] = newname
         group.at[index0, 'skip'] = ['-ss', ss]
@@ -187,11 +191,14 @@ def parse_file_path(source, check=True):
             df = pd.DataFrame({'filename': [path.name], 'urlfile': [str(path)]})
             need_download = False
     else:
+        if '*' not in source:
+            raise ValueError("Source must be a filename or a glob (use *).")
+
         directory = path.parent
         p = list(directory.rglob(path.name))
 
         if len(p) == 0:
-            raise ValueError("Input file or folder does not exist.")
+            raise ValueError("No files found matching file pattern.")
 
         df = pd.DataFrame({'filename': p})
         df['urlfile'] = df['filename'].apply(str)

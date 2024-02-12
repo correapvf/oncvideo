@@ -125,20 +125,32 @@ def list_file_helper(df, statistics, extension, quality, cols_to_keep):
         # first file
         r1 = name_to_timestamp(group['filename'].iloc[0])
         r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format=timef)
-        nseconds = (r01 - r1).total_seconds()
-        sign = '-' if nseconds < 0 else ''
-        df.loc[group.index[0],'query_offset'] = f'{sign}{strftd(abs(nseconds))}'
-
+        timediff = r01 - r1
+        nseconds = timediff.total_seconds()
+        if nseconds > 0:
+            query = f'start at {strftd(abs(nseconds))}'
+        elif nseconds < 0:
+            query = f'gap dateFrom of {timediff * -1}'
+        else:
+            query = ''
+        df.loc[group.index[0],'query_offset'] = query
+        
         # last file
         r2 = name_to_timestamp(group['filename'].iloc[-1])
         r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format=timef)
-        nseconds = (r02 - r2).total_seconds()
-        sign = '-' if nseconds < 0 else ''
-        if df.loc[group.index[-1],'query_offset'] == '':
-            df.loc[group.index[-1],'query_offset'] = f'{sign}{strftd(abs(nseconds))}'
+        timediff = r2 - r02
+        nseconds = timediff.total_seconds()
+        if nseconds > 0:
+            query = f'end at {strftd(abs(nseconds))}'
+        elif nseconds < 0:
+            query = f'gap dateTo of {timediff * -1}'
         else:
-            df.loc[group.index[-1],'query_offset'] = (f"{df.loc[group.index[-1],'query_offset']}"
-                f"/{sign}{strftd(abs(nseconds))}")
+            query = ''
+        query0 = df.loc[group.index[-1],'query_offset']
+        if query0 == '':
+            df.loc[group.index[-1],'query_offset'] = query
+        else:
+            df.loc[group.index[-1],'query_offset'] = f"{query0}/{query}"
 
     if cols_to_keep is not None:
         cols_new += cols_to_keep
@@ -217,7 +229,7 @@ def api_to_df(result, dateFrom, dateTo, statistics):
     return df
 
 
-def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None, deviceCategoryCode='ask',
+def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None, deviceCategoryCode='VIDEOCAM',
     dateFrom=None, dateTo=None, quality='ask', extension='mp4', statistics=True):
     """
     Get list of files archived in Oceans 3.0
@@ -238,7 +250,7 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
         Location code to seach files
     dive : str
         Dive number to seach files
-    deviceCategoryCode : str, default ask
+    deviceCategoryCode : str, default VIDEOCAM
         Device category code to search files. Only used when locationCode is suplied.
         Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' for ROVs.
         'ask' will list avaiable options and ask user to choose one.
@@ -281,7 +293,7 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
             dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
 
     elif dive:
-        dives = get_dives(onc, False)
+        dives = get_dives(onc)
 
         result = dives[dives['dive'] == dive]
         if result.shape[0] != 1:
@@ -363,7 +375,7 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
     if (dc+lc) == 0:
 
         if dv:
-            dives = get_dives(onc, False)
+            dives = get_dives(onc)
 
             dives.rename(columns={'startDate': 'dateFrom', 'endDate': 'dateTo'}, inplace=True)
             dives = dives[['dive','deviceCode','dateFrom','dateTo']]
@@ -402,7 +414,7 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
         cols_to_keep = ['fovs'] if 'fovs' in cols else None
 
     if cols_to_keep is None:
-        cols_to_keep_g = 'group'
+        cols_to_keep_g = ['group']
     else:
         cols_to_keep_g = cols_to_keep + ['group']
 
@@ -413,7 +425,7 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
             df_tmp = list_file_dc(onc, row['deviceCode'], dateFrom=row['dateFrom'],
                 dateTo=row['dateTo'], statistics=statistics)
             y = row[cols_to_keep_g].to_dict()
-            df_tmp.assign(**y)
+            df_tmp = df_tmp.assign(**y)
             df.append(df_tmp)
     else: #lc
         if not 'deviceCategoryCode' in cols:
@@ -423,13 +435,11 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
             df_tmp = list_file_lc(onc, row['locationCode'], deviceCategoryCode=row['deviceCategoryCode'],
                 dateFrom=row['dateFrom'], dateTo=row['dateTo'], statistics=statistics)
             y = row[cols_to_keep_g].to_dict()
-            df_tmp.assign(**y)
+            df_tmp = df_tmp.assign(**y)
             df.append(df_tmp)
 
     df = pd.concat(df)
 
     df = list_file_helper(df, statistics, extension, quality, cols_to_keep)
 
-    column_group = df.pop("group")
-    df.insert(0, "group", column_group)
     return df

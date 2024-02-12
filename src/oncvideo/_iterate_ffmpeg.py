@@ -31,7 +31,7 @@ def iterate_init(source, output, header, df, has_group):
         df = df[~df['filename'].isin(tmp['video_filename'])]
         count -= df.shape[0]
         f = open(file_out, "a", encoding="utf-8")
-        print(f"{file_out.name} already exists! {count} files already processed,"
+        print(f"{file_out.name} already exists! {count} files already processed, "
             "skipping to remaining files.")
     else:
         f = open(file_out, "w", encoding="utf-8")
@@ -40,7 +40,7 @@ def iterate_init(source, output, header, df, has_group):
     return df, folder, f
 
 
-def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params):
+def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params, missing_ok=False):
     """
     Loop in the DataFrame and execute the ffmpeg command
     """
@@ -85,7 +85,7 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params):
                     subfolder, row['video_filename'])
 
                 if need_download:
-                    tmpfile.unlink()
+                    tmpfile.unlink(missing_ok)
 
                 pbar.update()
 
