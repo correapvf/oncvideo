@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oncvideo.extract_frame &mdash; oncvideo 1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=0264ad83"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            oncvideo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../oncvideo.html">oncvideo package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">oncvideo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">oncvideo.extract_frame</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for oncvideo.extract_frame</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Function to extract frames from videos&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">name_to_timestamp</span><span class="p">,</span> <span class="n">download_file</span><span class="p">,</span> <span class="n">to_timedelta</span><span class="p">,</span> <span class="n">strftd2</span><span class="p">,</span> <span class="n">parse_file_path</span><span class="p">,</span> <span class="n">run_ffmpeg</span>
+<span class="kn">from</span> <span class="nn">._iterate_ffmpeg</span> <span class="kn">import</span> <span class="n">iterate_ffmpeg</span><span class="p">,</span> <span class="n">iterate_init</span>
+
+<span class="k">def</span> <span class="nf">_ffmpeg_run_frame</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create ffmpeg command and run and </span>
+<span class="sd">    write in a csv file for the generated frames</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># rename output to extract frames</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">output_file</span><span class="o">.</span><span class="n">stem</span>
+    <span class="n">outfolder</span> <span class="o">=</span> <span class="n">output_file</span><span class="o">.</span><span class="n">parent</span>
+    <span class="n">output_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outfolder</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">file_name</span><span class="si">}</span><span class="s2">_%05d.jpg&quot;</span>
+
+    <span class="c1"># Create ffmpeg command and run</span>
+    <span class="n">ff_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">skip</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="n">input_file</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">output_file</span><span class="p">]</span>
+    <span class="n">run_ffmpeg</span><span class="p">(</span><span class="n">ff_cmd</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span>
+
+    <span class="c1"># rename frames to correct timestamp</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">outfolder</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;_*.jpg&quot;</span><span class="p">)</span>
+    <span class="n">dout</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;filename_old&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="s1">&#39;video_filename&#39;</span><span class="p">:</span> <span class="n">video_name</span><span class="p">})</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dout</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># didn&#39;t extracted any frame (e.g. file length is lower than interval)</span>
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename_split&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename_old&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">))</span>
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename_split&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;Z-&#39;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">T%H%M%S.</span><span class="si">%f</span><span class="s1">Z&#39;</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timeadd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename_split&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">*</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;interval&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;interval2&#39;</span><span class="p">])</span>
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timeadd&#39;</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;sec&#39;</span><span class="p">)</span>
+        <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dout</span><span class="p">[</span><span class="s1">&#39;filename_split&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span>
+            <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">T%H%M%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;Z.jpg&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row2</span> <span class="ow">in</span> <span class="n">dout</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">row2</span><span class="p">[</span><span class="s1">&#39;filename_old&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">row2</span><span class="p">[</span><span class="s1">&#39;filename_old&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="n">row2</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]))</span>
+
+        <span class="c1"># save csv with all frames names + original videos</span>
+        <span class="k">if</span> <span class="n">subfolder</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">dout</span><span class="p">[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subfolder</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">dout</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;video_filename&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dout</span> <span class="o">=</span> <span class="n">dout</span><span class="p">[[</span><span class="s1">&#39;filename&#39;</span><span class="p">,</span> <span class="s1">&#39;video_filename&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">]]</span>
+
+        <span class="n">dout</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lineterminator</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;log_download.txt&quot;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ferr</span><span class="p">:</span>
+            <span class="n">ferr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No frame was extracted from: </span><span class="si">{</span><span class="n">input_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_frame"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_frame">[docs]</a><span class="k">def</span> <span class="nf">extract_frame</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;frames&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rounding_near</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract frames at a given interval</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source : str or pandas.DataFrame</span>
+<span class="sd">        A pandas DataFrame, a path to .csv file, or a Glob pattern to</span>
+<span class="sd">        match multiple files (use *)</span>
+<span class="sd">    interval : float</span>
+<span class="sd">        Interval, in seconds, to extract frames (e.g. a value of 10 will</span>
+<span class="sd">        extract one frame every 10 seconds).</span>
+<span class="sd">    output : str, default &#39;output&#39;</span>
+<span class="sd">        Name of the output folder to save converted videos</span>
+<span class="sd">    trim : bool, default False</span>
+<span class="sd">        Trim video files to match the initial seach query</span>
+<span class="sd">    deinterlace : bool, default False</span>
+<span class="sd">        Deinterlace video before getting the frames.</span>
+<span class="sd">    rounding_near : bool, default False</span>
+<span class="sd">        Grab frames at the middle of each interval (default ffmpeg</span>
+<span class="sd">        behaviour). If False, will grab frames at the start of each interval.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="s1">&#39;filename,video_filename,timestamp</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+    <span class="k">if</span> <span class="n">interval</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;fps=</span><span class="si">{</span><span class="mi">1</span><span class="o">/</span><span class="n">interval</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">elif</span> <span class="n">interval</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="s1">&#39;fps=1&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;fps=1/</span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="k">if</span> <span class="n">deinterlace</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="s1">&#39;pp=ci|a,&#39;</span> <span class="o">+</span> <span class="n">vf_cmd</span>
+
+    <span class="k">if</span> <span class="n">rounding_near</span><span class="p">:</span>
+        <span class="n">interval2</span> <span class="o">=</span> <span class="n">interval</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="n">vf_cmd</span> <span class="o">+</span> <span class="s1">&#39;:round=up&#39;</span>
+        <span class="n">interval2</span> <span class="o">=</span> <span class="n">interval</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;-vf&#39;</span><span class="p">,</span> <span class="n">vf_cmd</span><span class="p">,</span>
+            <span class="s1">&#39;-qmin&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-qmax&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-q:v&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;interval&#39;</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span>
+        <span class="s1">&#39;interval2&#39;</span><span class="p">:</span> <span class="n">interval2</span>
+    <span class="p">}</span>
+
+    <span class="n">iterate_ffmpeg</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">trim</span><span class="p">,</span> <span class="n">_ffmpeg_run_frame</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="extract_fov"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_fov">[docs]</a><span class="k">def</span> <span class="nf">extract_fov</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;fovs&#39;</span><span class="p">,</span> <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract FOVs from videos</span>
+
+<span class="sd">    Extract framegrabs or clips for each video at given timestamps </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source : str or pandas.DataFrame</span>
+<span class="sd">        A pandas DataFrame, a path to .csv file, or a Glob pattern to</span>
+<span class="sd">        match multiple files (use *)</span>
+<span class="sd">    timestamps : str, float, or list</span>
+<span class="sd">        A timestamp or a list of timestaps where the framegrabs will be extracted.</span>
+<span class="sd">        Can be a float indicating the number of seconds or a string in the format</span>
+<span class="sd">        mm:ss.f, from the start of the video. If None (the default), it will try to</span>
+<span class="sd">        get the timestamps from the column &#39;fovs&#39; in the source.</span>
+<span class="sd">    duration : float</span>
+<span class="sd">        If provided, the function will get clips instead of framegrabs, with</span>
+<span class="sd">        duration given in seconds. The start of the clips are given by &#39;timestamps&#39;. </span>
+<span class="sd">    output : str, default &#39;fovs&#39;</span>
+<span class="sd">        Name of the output folder to save images/videos.</span>
+<span class="sd">    deinterlace : bool, default False</span>
+<span class="sd">        Deinterlace video before getting the frames. This argument is ignored</span>
+<span class="sd">        for clips, since the stream is copyied from the original video.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">has_group</span><span class="p">,</span> <span class="n">need_download</span> <span class="o">=</span> <span class="n">parse_file_path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+    <span class="n">fov_csv</span> <span class="o">=</span> <span class="s1">&#39;fovs&#39;</span> <span class="ow">in</span> <span class="n">df</span>
+
+    <span class="k">if</span> <span class="n">fov_csv</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
+
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;FOV</span><span class="si">{</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))])</span>
+        <span class="n">maxfov</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">fovfolder</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;FOV</span><span class="si">{</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">maxfov</span><span class="p">))]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">timestamps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You must provide a timestamp to extract the FOV,&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;or the csv file must contain the column &#39;fovs&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timestamps</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">timestamps</span> <span class="o">=</span> <span class="p">[</span><span class="n">timestamps</span><span class="p">]</span>
+        <span class="n">fovs</span> <span class="o">=</span> <span class="p">[</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">timestamps</span><span class="p">]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">fovs</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))]</span>
+        <span class="n">fovfolder</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;FOV_</span><span class="si">{</span><span class="n">strftd2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fovs</span><span class="p">]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">fovfolder</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))]</span>
+
+    <span class="c1"># header for the output csv</span>
+
+    <span class="n">header</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;video_filename,</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fovfolder</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="n">df</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="n">iterate_init</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">has_group</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">deinterlace</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;-vf&#39;</span><span class="p">,</span> <span class="s1">&#39;pp=ci|a&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vf_cmd</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">duration</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># start for loop</span>
+    <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">desc</span> <span class="o">=</span> <span class="s1">&#39;Processed files&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;group&#39;</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">has_group</span><span class="p">:</span>
+                <span class="n">outfolder</span> <span class="o">=</span> <span class="n">folder</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">outfolder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outfolder</span> <span class="o">=</span> <span class="n">folder</span>
+
+            <span class="c1"># Create folder for each FOV</span>
+            <span class="k">if</span> <span class="n">fov_csv</span><span class="p">:</span>
+                <span class="n">maxfov</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="n">fovs</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;FOV</span><span class="si">{</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">maxfov</span><span class="p">))]</span>
+
+                <span class="k">for</span> <span class="n">fov</span> <span class="ow">in</span> <span class="n">fovs</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">outfolder</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="n">fov</span><span class="p">)</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">fov</span> <span class="ow">in</span> <span class="n">fovfolder</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="n">outfolder</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="n">fov</span><span class="p">)</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># extract frames for each video</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="c1"># download video</span>
+                <span class="n">file_name_p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">need_download</span><span class="p">:</span>
+                    <span class="n">tmpfile</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span> <span class="o">/</span> <span class="n">file_name_p</span>
+                    <span class="n">download_file</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;urlfile&#39;</span><span class="p">],</span> <span class="n">tmpfile</span><span class="p">)</span>
+                    <span class="n">tmpfile_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmpfile</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tmpfile_str</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;urlfile&#39;</span><span class="p">]</span>
+
+                <span class="c1"># get timestamp of file</span>
+                <span class="n">timestamp</span> <span class="o">=</span> <span class="n">name_to_timestamp</span><span class="p">(</span><span class="n">file_name_p</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">oldname_dc</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">dc</span>
+
+                <span class="c1"># Extract frame/video for each FOV</span>
+                <span class="n">filename_fovs</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">fov</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">]):</span>
+
+                    <span class="k">if</span> <span class="n">fov</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                        <span class="n">filename_fovs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_name</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">newtime</span> <span class="o">=</span> <span class="p">(</span><span class="n">timestamp</span> <span class="o">+</span> <span class="n">fov</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">T%H%M%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+                    <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">oldname_dc</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">newtime</span><span class="si">}</span><span class="s2">Z</span><span class="si">{</span><span class="n">file_name_p</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">new_name_p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">fov_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">fov</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+
+                    <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">new_name</span> <span class="o">=</span> <span class="n">outfolder</span> <span class="o">/</span> <span class="n">p</span> <span class="o">/</span> <span class="n">new_name_p</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s1">&#39;.jpg&#39;</span><span class="p">)</span>
+                        <span class="n">ff_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">,</span> <span class="s1">&#39;-ss&#39;</span><span class="p">,</span> <span class="n">fov_str</span><span class="p">,</span> <span class="s1">&#39;-i&#39;</span><span class="p">,</span>
+                            <span class="n">tmpfile_str</span><span class="p">]</span> <span class="o">+</span> <span class="n">vf_cmd</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;-frames:v&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-update&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;-qmin&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-qmax&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-q:v&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="n">new_name</span><span class="p">]</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">new_name</span> <span class="o">=</span> <span class="n">outfolder</span> <span class="o">/</span> <span class="n">p</span> <span class="o">/</span> <span class="n">new_name_p</span>
+                        <span class="n">ff_cmd</span> <span class="o">=</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">,</span> <span class="s1">&#39;-ss&#39;</span><span class="p">,</span> <span class="n">fov_str</span><span class="p">,</span>
+                            <span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="n">tmpfile_str</span><span class="p">,</span> <span class="s1">&#39;-t&#39;</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;copy&#39;</span><span class="p">,</span> <span class="n">new_name</span><span class="p">]</span>
+
+                    <span class="n">run_ffmpeg</span><span class="p">(</span><span class="n">ff_cmd</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">new_name</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">filename_fovs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_name</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">need_download</span><span class="p">:</span>
+                    <span class="n">tmpfile</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+
+                <span class="c1"># save csv with video name</span>
+                <span class="k">if</span> <span class="n">has_group</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filename_fovs</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filename_fovs</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Paulo Correa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

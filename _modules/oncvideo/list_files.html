@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oncvideo.list_files &mdash; oncvideo 1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=0264ad83"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            oncvideo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../oncvideo.html">oncvideo package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">oncvideo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">oncvideo.list_files</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for oncvideo.list_files</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;List archived files from ONC&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">sizeof_fmt</span><span class="p">,</span> <span class="n">strftd</span><span class="p">,</span> <span class="n">name_to_timestamp</span>
+<span class="kn">from</span> <span class="nn">.dives_onc</span> <span class="kn">import</span> <span class="n">get_dives</span>
+
+<span class="k">def</span> <span class="nf">_ask_options</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">,</span> <span class="n">ihelp</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List option and ask user to select which result they want to keep</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">noptions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="n">input_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Select a </span><span class="si">{</span><span class="n">ivalue</span><span class="si">}</span><span class="s1">:</span><span class="se">\n</span><span class="s1">&#39;</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">noptions</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="n">ivalue</span><span class="p">]</span>
+        <span class="n">item2</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="n">ihelp</span><span class="p">]</span>
+        <span class="n">input_message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">) </span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">item2</span><span class="si">}</span><span class="s1">)</span><span class="se">\n</span><span class="s1">&#39;</span>
+    <span class="n">input_message</span> <span class="o">+=</span> <span class="s1">&#39;Enter a number: &#39;</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">input_message</span><span class="p">)</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">value</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Value must be numeric.&#39;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="n">noptions</span>
+        <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Value must be equal or below </span><span class="si">{</span><span class="n">noptions</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">value</span><span class="p">][</span><span class="n">ivalue</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;You selected: &#39;</span> <span class="o">+</span> <span class="n">out</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">def</span> <span class="nf">_ask_options_multiple</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List option and ask user to select which result they want to keep</span>
+<span class="sd">    Allows multiple values to be choosen</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">results</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="n">results</span><span class="o">.</span><span class="n">sum</span><span class="p">()],</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;all&#39;</span><span class="p">])])</span>
+    <span class="n">input_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Select a </span><span class="si">{</span><span class="n">ivalue</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="n">input_message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">) </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> videos)</span><span class="se">\n</span><span class="s1">&#39;</span>
+    <span class="n">input_message</span> <span class="o">+=</span> <span class="s1">&#39;Enter a number (use comma to separate multiple options): &#39;</span>
+
+    <span class="n">noptions</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">input_message</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">isnumeric</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Values must be numeric.&#39;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="n">noptions</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">check</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Values must be equal or below </span><span class="si">{</span><span class="n">noptions</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">value</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;You selected: &#39;</span> <span class="o">+</span> <span class="n">out</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span> <span class="nf">_list_file_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">statistics</span><span class="p">,</span> <span class="n">extension</span><span class="p">,</span> <span class="n">quality</span><span class="p">,</span> <span class="n">cols_to_keep</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to get the API output and filter unwanted</span>
+<span class="sd">    files and format columns</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="s1">&#39;group&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+        <span class="n">cols_new</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+        <span class="n">cols_sort</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="s1">&#39;ext&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cols_new</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+        <span class="n">cols_sort</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ext&#39;</span><span class="p">]</span>
+
+
+    <span class="c1"># select extension</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;ext&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">extn</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;ext&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">extn</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">extension</span> <span class="o">==</span> <span class="s1">&#39;ask&#39;</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="n">_ask_options_multiple</span><span class="p">(</span><span class="n">extn</span><span class="p">,</span> <span class="s2">&quot;extension&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">extension</span> <span class="o">!=</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;ext&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">extension</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># select quality</span>
+    <span class="k">if</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;Z-&#39;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Z.&#39;</span><span class="p">,</span> <span class="s1">&#39;Z-standard.&#39;</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">qualityn</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qualityn</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">quality</span> <span class="o">==</span> <span class="s1">&#39;ask&#39;</span><span class="p">:</span>
+                <span class="n">quality</span> <span class="o">=</span> <span class="n">_ask_options_multiple</span><span class="p">(</span><span class="n">qualityn</span><span class="p">,</span> <span class="s2">&quot;quality&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">quality</span> <span class="o">!=</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                <span class="n">quality</span> <span class="o">=</span> <span class="n">quality</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">quality</span><span class="p">)]</span>
+
+            <span class="n">qualityn</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+
+        <span class="c1"># Only keep quality column if more than one quality after filter</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qualityn</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">quality</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">cols_new</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span>
+            <span class="n">cols_sort</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;quality&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Start and End columns</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;ext&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">cols_sort</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">timef</span> <span class="o">=</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">Z&#39;</span>
+
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">cols_sort</span><span class="p">):</span>
+
+        <span class="c1"># first file</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">name_to_timestamp</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">r01</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;dateFromQuery&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">timef</span><span class="p">)</span>
+        <span class="n">timediff</span> <span class="o">=</span> <span class="n">r01</span> <span class="o">-</span> <span class="n">r1</span>
+        <span class="n">nseconds</span> <span class="o">=</span> <span class="n">timediff</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">nseconds</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;start at </span><span class="si">{</span><span class="n">strftd</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">nseconds</span><span class="p">))</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">elif</span> <span class="n">nseconds</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;gap dateFrom of </span><span class="si">{</span><span class="n">timediff</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span>
+        
+        <span class="c1"># last file</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">name_to_timestamp</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">r02</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;dateToQuery&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">timef</span><span class="p">)</span>
+        <span class="n">timediff</span> <span class="o">=</span> <span class="n">r2</span> <span class="o">-</span> <span class="n">r02</span>
+        <span class="n">nseconds</span> <span class="o">=</span> <span class="n">timediff</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">nseconds</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;end at </span><span class="si">{</span><span class="n">strftd</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">nseconds</span><span class="p">))</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">elif</span> <span class="n">nseconds</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;gap dateTo of </span><span class="si">{</span><span class="n">timediff</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">query0</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">query0</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">group</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">query0</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">if</span> <span class="n">cols_to_keep</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cols_new</span> <span class="o">+=</span> <span class="n">cols_to_keep</span>
+
+    <span class="c1"># calculate and print overall statistics</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of files: &#39;</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">statistics</span><span class="p">:</span>
+        <span class="n">cols_new</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">,</span><span class="s1">&#39;fileSizeMB&#39;</span><span class="p">,</span><span class="s1">&#39;year&#39;</span><span class="p">,</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span><span class="s1">&#39;minute&#39;</span><span class="p">,</span><span class="s1">&#39;second&#39;</span><span class="p">]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="n">timef</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="n">timef</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Total duration: &#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Total file size: &#39;</span><span class="p">,</span> <span class="n">sizeof_fmt</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;fileSize&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fileSize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fileSize&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">9.5367431640625e-07</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fileSize&#39;</span><span class="p">:</span> <span class="s1">&#39;fileSizeMB&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">strftd</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;year&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">year</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">month</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;day&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">day</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;minute&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">minute</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;second&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">second</span>
+
+    <span class="n">cols_new</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;query_offset&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols_new</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get file list by device code</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">returnOptions</span> <span class="o">=</span> <span class="s1">&#39;all&#39;</span> <span class="k">if</span> <span class="n">statistics</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;deviceCode&#39;</span>     <span class="p">:</span> <span class="n">deviceCode</span><span class="p">,</span>
+            <span class="s1">&#39;dateFrom&#39;</span>       <span class="p">:</span> <span class="n">dateFrom</span><span class="p">,</span>
+            <span class="s1">&#39;dateTo&#39;</span>         <span class="p">:</span> <span class="n">dateTo</span><span class="p">,</span>
+            <span class="s1">&#39;returnOptions&#39;</span>  <span class="p">:</span> <span class="n">returnOptions</span>
+        <span class="p">}</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">getListByDevice</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">allPages</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_list_file_lc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">locationCode</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="p">,</span>
+               <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get file list by location code</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">deviceCategoryCode</span> <span class="o">==</span> <span class="s1">&#39;ask&#39;</span><span class="p">:</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;locationCode&#39;</span><span class="p">:</span> <span class="n">locationCode</span><span class="p">}</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">getDeviceCategories</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span>
+
+        <span class="n">deviceCategoryCode</span> <span class="o">=</span> <span class="n">_ask_options</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">,</span> <span class="s1">&#39;deviceCategoryName&#39;</span><span class="p">)</span>
+
+    <span class="n">returnOptions</span> <span class="o">=</span> <span class="s1">&#39;all&#39;</span> <span class="k">if</span> <span class="n">statistics</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;locationCode&#39;</span>      <span class="p">:</span> <span class="n">locationCode</span><span class="p">,</span>
+        <span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">:</span> <span class="n">deviceCategoryCode</span><span class="p">,</span>
+        <span class="s1">&#39;dateFrom&#39;</span>          <span class="p">:</span> <span class="n">dateFrom</span><span class="p">,</span>
+        <span class="s1">&#39;dateTo&#39;</span>            <span class="p">:</span> <span class="n">dateTo</span><span class="p">,</span>
+        <span class="s1">&#39;returnOptions&#39;</span>     <span class="p">:</span> <span class="n">returnOptions</span>
+    <span class="p">}</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">getListByLocation</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">allPages</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract output from the API</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;files&#39;</span><span class="p">]</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="k">if</span> <span class="n">statistics</span> <span class="k">else</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">])</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateFromQuery&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dateFrom</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dateToQuery&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dateTo</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<div class="viewcode-block" id="list_file"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file">[docs]</a><span class="k">def</span> <span class="nf">list_file</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceId</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">locationCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dive</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="o">=</span><span class="s1">&#39;VIDEOCAM&#39;</span><span class="p">,</span>
+    <span class="n">dateFrom</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dateTo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;ask&#39;</span><span class="p">,</span> <span class="n">extension</span><span class="o">=</span><span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get list of files archived in Oceans 3.0</span>
+
+<span class="sd">    Search archived files based on one of the following criterias: decideCode,</span>
+<span class="sd">    deviceId, locationCode and dive number. One of these parameters need to</span>
+<span class="sd">    be suplied to the function. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    onc : onc.ONC</span>
+<span class="sd">        ONC class object</span>
+<span class="sd">    deviceCode : str</span>
+<span class="sd">        Devide code to seach files</span>
+<span class="sd">    deviceId : str or int</span>
+<span class="sd">        Devide Id to seach files</span>
+<span class="sd">    locationCode : str</span>
+<span class="sd">        Location code to seach files</span>
+<span class="sd">    dive : str</span>
+<span class="sd">        Dive number to seach files</span>
+<span class="sd">    deviceCategoryCode : str, default VIDEOCAM</span>
+<span class="sd">        Device category code to search files. Only used when locationCode is suplied.</span>
+<span class="sd">        Usually &#39;VIDEOCAM&#39; for fixed cameras and &#39;ROV_CAMERA&#39; for ROVs.</span>
+<span class="sd">        &#39;ask&#39; will list avaiable options and ask user to choose one.</span>
+<span class="sd">    dateFrom : str or datetime</span>
+<span class="sd">        Return videos after specified datetime. Can be any format that is parsed</span>
+<span class="sd">        by pandas.to_datetime. If None, will search all videos since the device</span>
+<span class="sd">        was first deployed.</span>
+<span class="sd">    dateFrom : str or datetime</span>
+<span class="sd">        Return videos before specified datetime. Can be any format that is parsed</span>
+<span class="sd">        by pandas.to_datetime. If None, will search all videos until the current</span>
+<span class="sd">        date.</span>
+<span class="sd">    quality : str, default ask</span>
+<span class="sd">        Especify a quality to filter videos. Usually should be LOW, standard,</span>
+<span class="sd">        1500, 5000, UHD. &#39;ask&#39; will list avaiable options and ask user to choose one.</span>
+<span class="sd">        &#39;all&#39; will get all avaiable videos. Accepts multiple values as comma separated.</span>
+<span class="sd">    extension : str, default mp4</span>
+<span class="sd">        Especify a extension to filter videos. &#39;ask&#39; will list avaiable options and</span>
+<span class="sd">        ask user to choose one. &#39;all&#39; will get all avaiable videos.</span>
+<span class="sd">        Accepts multiple values as comma separated.</span>
+<span class="sd">    statistics : bool, default True</span>
+<span class="sd">        Also save video durations and file sizes.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        A DataFrame with the filenames, and videos duration and file sizes if</span>
+<span class="sd">        statistics is True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dateFrom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dateFrom</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">dateFrom</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;Z&#39;</span>
+
+    <span class="k">if</span> <span class="n">dateTo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dateTo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">dateTo</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;Z&#39;</span>
+
+    <span class="k">if</span> <span class="n">deviceCode</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="p">,</span> <span class="n">dateFrom</span><span class="o">=</span><span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="o">=</span><span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">locationCode</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_lc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">locationCode</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="o">=</span><span class="n">deviceCategoryCode</span><span class="p">,</span>
+            <span class="n">dateFrom</span><span class="o">=</span><span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="o">=</span><span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dive</span><span class="p">:</span>
+        <span class="n">dives</span> <span class="o">=</span> <span class="n">get_dives</span><span class="p">(</span><span class="n">onc</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">dives</span><span class="p">[</span><span class="n">dives</span><span class="p">[</span><span class="s1">&#39;dive&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dive</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;dive&#39; argument does not match any dive.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dateFrom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dateFrom</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;startDate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">dateTo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dateTo</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;endDate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">dateFrom</span> <span class="o">=</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span> <span class="o">=</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">deviceId</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">=</span><span class="n">onc</span><span class="o">.</span><span class="n">getDevices</span><span class="p">({</span><span class="s1">&#39;deviceId&#39;</span><span class="p">:</span> <span class="n">deviceId</span><span class="p">})</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">],</span> <span class="n">dateFrom</span><span class="o">=</span><span class="n">dateFrom</span><span class="p">,</span>
+            <span class="n">dateTo</span><span class="o">=</span><span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;One of {deviceCode, deviceId, locationCode, dive} is required&quot;</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">statistics</span><span class="p">,</span> <span class="n">extension</span><span class="p">,</span> <span class="n">quality</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+
+<div class="viewcode-block" id="list_file_batch"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file_batch">[docs]</a><span class="k">def</span> <span class="nf">list_file_batch</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">csvfile</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;ask&#39;</span><span class="p">,</span> <span class="n">extension</span><span class="o">=</span><span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_cols</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Batch list of files archived in Oceans 3.0</span>
+<span class="sd">    List video files based on parameters stored in a csv file</span>
+
+<span class="sd">    This function will execute multiple search for archived files based on parameters stored</span>
+<span class="sd">    in a csv file. Usefull to get videos from multiple sites and/or dives.</span>
+<span class="sd">    Column names must be one of decideCode, deviceId, locationCode or dive.</span>
+<span class="sd">    Csv may also include parameters dateFrom, dateTo, and deviceCategoryCode.</span>
+<span class="sd">    Details on these parameters can be found in &#39;list_file&#39; function. A column named &#39;group&#39;</span>
+<span class="sd">    can also be used to distingshed each query in the final table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    onc : onc.ONC</span>
+<span class="sd">        ONC class object</span>
+<span class="sd">    csvfile : str, path object or file-like object</span>
+<span class="sd">        Location to the input csv file.</span>
+<span class="sd">    quality : str, default ask</span>
+<span class="sd">        Especify a quality to filter videos. Usually should be LOW, standard,</span>
+<span class="sd">        1500, 5000, UHD. &#39;ask&#39; will list avaiable options and ask user to choose one.</span>
+<span class="sd">        &#39;all&#39; will get all avaiable videos. Accepts multiple values as comma separated.</span>
+<span class="sd">    extension : str, default mp4</span>
+<span class="sd">        Especify a extension to filter videos. &#39;ask&#39; will list avaiable options and</span>
+<span class="sd">        ask user to choose one. &#39;all&#39; will get all avaiable videos.</span>
+<span class="sd">        Accepts multiple values as comma separated.</span>
+<span class="sd">    statistics : bool, default True</span>
+<span class="sd">        Also save video durations and file sizes.</span>
+<span class="sd">    keep_cols : bool, default False</span>
+<span class="sd">        Keep other columns from csvfile into the output.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        A DataFrame with the filenames, and videos duration and file sizes if</span>
+<span class="sd">        statistics is True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csvfile</span><span class="p">)</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+
+    <span class="n">dc</span> <span class="o">=</span> <span class="s1">&#39;deviceCode&#39;</span> <span class="ow">in</span> <span class="n">cols</span>
+    <span class="n">di</span> <span class="o">=</span> <span class="s1">&#39;deviceId&#39;</span> <span class="ow">in</span> <span class="n">cols</span>
+    <span class="n">lc</span> <span class="o">=</span> <span class="s1">&#39;locationCode&#39;</span> <span class="ow">in</span> <span class="n">cols</span>
+    <span class="n">dv</span> <span class="o">=</span> <span class="s1">&#39;dive&#39;</span> <span class="ow">in</span> <span class="n">cols</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">dc</span><span class="o">+</span><span class="n">di</span><span class="o">+</span><span class="n">lc</span><span class="o">+</span><span class="n">dv</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;One of {deviceCode, deviceID, locationCode, dive} must be a column </span><span class="se">\</span>
+<span class="s2">            in the csv file&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">dc</span><span class="o">+</span><span class="n">lc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">dv</span><span class="p">:</span>
+            <span class="n">dives</span> <span class="o">=</span> <span class="n">get_dives</span><span class="p">(</span><span class="n">onc</span><span class="p">)</span>
+
+            <span class="n">dives</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;startDate&#39;</span><span class="p">:</span> <span class="s1">&#39;dateFrom&#39;</span><span class="p">,</span> <span class="s1">&#39;endDate&#39;</span><span class="p">:</span> <span class="s1">&#39;dateTo&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">dives</span> <span class="o">=</span> <span class="n">dives</span><span class="p">[[</span><span class="s1">&#39;dive&#39;</span><span class="p">,</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">,</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">,</span><span class="s1">&#39;dateTo&#39;</span><span class="p">]]</span>
+
+            <span class="n">nrows</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">dives</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;dive&quot;</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="s1">&#39;_y&#39;</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">nrows</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Some dives in the csv file do not match any dive.&quot;</span><span class="p">)</span>
+
+
+        <span class="k">elif</span> <span class="n">di</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">onc</span><span class="o">.</span><span class="n">getDevices</span><span class="p">())</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[[</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">,</span><span class="s1">&#39;deviceId&#39;</span><span class="p">]]</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;deviceId&quot;</span><span class="p">)</span>
+
+        <span class="n">dc</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="c1"># update</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;dateFrom&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;dateFrom&#39; must be a column in the csv file (exept if &#39;dive&#39; is provided).&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;dateTo&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;dateTo&#39; must be a column in the csv file (exept if &#39;dive&#39; is provided).&quot;</span><span class="p">)</span>
+
+    <span class="n">file</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;Z&#39;</span>
+    <span class="n">file</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;Z&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;group&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+        <span class="n">file</span><span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;row&#39;</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">keep_cols</span><span class="p">:</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">,</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">,</span><span class="s1">&#39;deviceId&#39;</span><span class="p">,</span><span class="s1">&#39;locationCode&#39;</span><span class="p">,</span><span class="s1">&#39;dive&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;dateFrom&#39;</span><span class="p">,</span><span class="s1">&#39;dateTo&#39;</span><span class="p">,</span><span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">]</span>
+        <span class="n">cols_to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">z</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cols_to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;fovs&#39;</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">cols_to_keep</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cols_to_keep_g</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cols_to_keep_g</span> <span class="o">=</span> <span class="n">cols_to_keep</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">]</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">dc</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">],</span> <span class="n">dateFrom</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">],</span>
+                <span class="n">dateTo</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">],</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">cols_to_keep_g</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">df_tmp</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1">#lc</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;deviceCategoryCode&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;deviceCategoryCode&#39; must be a column in the csv file when using locationCode.&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">file</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">_list_file_lc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;locationCode&#39;</span><span class="p">],</span> <span class="n">deviceCategoryCode</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">],</span>
+                <span class="n">dateFrom</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">],</span> <span class="n">dateTo</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">],</span> <span class="n">statistics</span><span class="o">=</span><span class="n">statistics</span><span class="p">)</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">cols_to_keep_g</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="n">df_tmp</span> <span class="o">=</span> <span class="n">df_tmp</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df_tmp</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">_list_file_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">statistics</span><span class="p">,</span> <span class="n">extension</span><span class="p">,</span> <span class="n">quality</span><span class="p">,</span> <span class="n">cols_to_keep</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Paulo Correa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

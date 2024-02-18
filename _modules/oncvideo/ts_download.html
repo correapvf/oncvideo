@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oncvideo.ts_download &mdash; oncvideo 1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=0264ad83"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            oncvideo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../oncvideo.html">oncvideo package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">oncvideo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">oncvideo.ts_download</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for oncvideo.ts_download</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;download NAV and CTD files from same site&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="n">as_completed</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">name_to_timestamp_dc</span><span class="p">,</span> <span class="n">parse_file_path</span>
+
+
+<span class="k">class</span> <span class="nc">_HiddenPrints</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    To prevent onc to print output when downloading files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_original_stdout</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original_stdout</span>
+
+
+<span class="k">def</span> <span class="nf">_download_ts_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">onc</span><span class="p">,</span> <span class="n">category_code</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">fo</span><span class="p">,</span> <span class="n">nworkers</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to download time series data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get timestamp and deviceCode from filename</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s1">&#39;filename&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df</span><span class="p">[[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;dc&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">name_to_timestamp_dc</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="s1">&#39;filename&#39;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># group if gap between timestamps is bigger than one day</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;gap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;dc&#39;</span><span class="p">)[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+
+    <span class="c1"># start for loop</span>
+    <span class="n">nloop</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">futures</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">nworkers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="s1">&#39;gap&#39;</span><span class="p">]):</span>
+
+            <span class="n">date_from</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">)</span>
+            <span class="n">date_from</span> <span class="o">=</span> <span class="n">date_from</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;Z&#39;</span>
+            <span class="n">date_to</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">)</span>
+            <span class="n">date_to</span> <span class="o">=</span> <span class="n">date_to</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;Z&#39;</span>
+
+            <span class="n">date_o_from</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])[:</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span>
+            <span class="n">date_o_to</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])[:</span><span class="o">-</span><span class="mi">6</span><span class="p">]</span>
+
+            <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">&#39;deviceCode&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="s1">&#39;dateFrom&#39;</span>  <span class="p">:</span> <span class="n">date_from</span><span class="p">,</span>
+                        <span class="s1">&#39;dateTo&#39;</span>    <span class="p">:</span> <span class="n">date_to</span>
+                    <span class="p">}</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">getLocations</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span>
+
+
+            <span class="c1"># sanity check. Only one locationCode should be retrieved</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeWarning</span><span class="p">(</span><span class="s2">&quot;More than one location found for deviceCode&quot;</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot; between &quot;</span><span class="p">,</span> <span class="n">date_from</span><span class="p">,</span> <span class="s2">&quot; and &quot;</span><span class="p">,</span> <span class="n">date_to</span><span class="p">)</span>
+            <span class="n">location_code</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;locationCode&#39;</span><span class="p">]</span>
+
+            <span class="n">location_code</span> <span class="o">=</span> <span class="n">location_code</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">location_code</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">result2</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">getLocationHierarchy</span><span class="p">({</span><span class="s1">&#39;locationCode&#39;</span><span class="p">:</span> <span class="n">location_code</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+                <span class="n">location_code</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;locationCode&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">result2</span><span class="p">]</span>
+
+            <span class="n">nloop</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">location_code</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">category_code</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">lc</span> <span class="ow">in</span> <span class="n">location_code</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">cc</span> <span class="ow">in</span> <span class="n">category_code</span><span class="p">:</span>
+                    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">&#39;locationCode&#39;</span><span class="p">:</span> <span class="n">lc</span><span class="p">,</span>
+                        <span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">:</span> <span class="n">cc</span><span class="p">,</span>
+                        <span class="s1">&#39;dateFrom&#39;</span>  <span class="p">:</span> <span class="n">date_from</span><span class="p">,</span>
+                        <span class="s1">&#39;dateTo&#39;</span>    <span class="p">:</span> <span class="n">date_to</span><span class="p">,</span>
+                        <span class="s2">&quot;dataProductCode&quot;</span><span class="p">:</span> <span class="s2">&quot;TSSD&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;extension&quot;</span> <span class="p">:</span> <span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+                        <span class="s1">&#39;dpo_qualityControl&#39;</span><span class="p">:</span> <span class="n">clean</span><span class="p">,</span>
+                        <span class="s1">&#39;dpo_resample&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;dpo_dataGaps&#39;</span><span class="p">:</span> <span class="mi">0</span>
+                    <span class="p">}</span>
+
+                    <span class="k">if</span> <span class="n">fo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">r</span> <span class="o">=</span> <span class="n">fo</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">fo</span><span class="p">[</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">fo</span><span class="p">[</span><span class="s1">&#39;dateFrom&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">date_o_from</span><span class="p">)</span> <span class="o">&amp;</span>
+                            <span class="p">(</span><span class="n">fo</span><span class="p">[</span><span class="s1">&#39;dateTo&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">date_o_to</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">fo</span><span class="p">[</span><span class="s1">&#39;locationCode&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">lc</span><span class="p">)</span> <span class="o">&amp;</span>
+                            <span class="p">(</span><span class="n">fo</span><span class="p">[</span><span class="s1">&#39;deviceCategoryCode&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">cc</span><span class="p">)]</span>
+                        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">continue</span>
+
+                    <span class="k">if</span> <span class="n">cc</span> <span class="o">==</span> <span class="s1">&#39;NAV&#39;</span><span class="p">:</span>
+                        <span class="n">filters</span><span class="p">[</span><span class="s1">&#39;dpo_includeOrientationSensors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+
+                    <span class="n">to_write</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">date_o_from</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">date_o_to</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">lc</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">cc</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                    <span class="n">futures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_execute_download</span><span class="p">,</span> <span class="n">onc</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">to_write</span><span class="p">))</span>
+
+        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">nloop</span><span class="p">,</span> <span class="n">desc</span> <span class="o">=</span> <span class="s1">&#39;Processed files&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_execute_download</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">to_write</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    function passed to thread</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">_HiddenPrints</span><span class="p">():</span>
+            <span class="n">result3</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">orderDataProduct</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">includeMetadataFile</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">result3</span><span class="p">[</span><span class="s1">&#39;downloadResults&#39;</span><span class="p">]:</span>
+            <span class="c1"># write in csv file</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">to_write</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">file</span><span class="p">[</span><span class="s1">&#39;file&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="download_ts"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.download_ts">[docs]</a><span class="k">def</span> <span class="nf">download_ts</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">category_code</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span>
+    <span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">out_merged</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nworkers</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Donwload timeseries data for video files</span>
+
+<span class="sd">    Based on the filenames that are passed in the source, this function will</span>
+<span class="sd">    download time series scalar data (tssd) that corresponds to the same</span>
+<span class="sd">    time period as the filenames.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    onc : onc.ONC</span>
+<span class="sd">        ONC class object</span>
+<span class="sd">    source : str or pandas.DataFrame</span>
+<span class="sd">        A pandas DataFrame, a path to .csv file, or a Glob pattern to</span>
+<span class="sd">        match multiple files (use *).</span>
+<span class="sd">    category_code : str or list</span>
+<span class="sd">        Category Code of data to download. E.g. NAV, CTD, OXYSENSOR, etc.</span>
+<span class="sd">    output : str, default &#39;output&#39;</span>
+<span class="sd">        Name of the output folder to save files.</span>
+<span class="sd">    clean : bool, default True</span>
+<span class="sd">        Return clean data from the API call (values with bad flags are removed),</span>
+<span class="sd">        else return raw data.</span>
+<span class="sd">    out_merged : bool, default False</span>
+<span class="sd">        If True, the function :func:`~oncvideo.merge_ts` will run automatically</span>
+<span class="sd">        after tssd is downloaded and save the merged file as `{output}_merged.csv`.</span>
+<span class="sd">    nworkers : int, default 20</span>
+<span class="sd">        Number of simultaneous API calls to make</span>
+<span class="sd">    **kwargs</span>
+<span class="sd">        `tolerance` and `units` passed to :func:`~oncvideo.merge_ts`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        The dataFrame generated from source, with variables within ts_data</span>
+<span class="sd">        merged based on the timestamps</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parse_file_path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+    <span class="n">tol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tolerance&#39;</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># fix a few parameters</span>
+    <span class="n">clean</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">clean</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">category_code</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">category_code</span> <span class="o">=</span> <span class="p">[</span><span class="n">category_code</span><span class="p">]</span>
+
+    <span class="n">out_path</span> <span class="o">=</span> <span class="n">onc</span><span class="o">.</span><span class="n">outPath</span>
+    <span class="n">onc</span><span class="o">.</span><span class="n">outPath</span> <span class="o">=</span> <span class="n">output</span>
+
+    <span class="n">file_out</span> <span class="o">=</span> <span class="n">output</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="n">output</span> <span class="o">+</span> <span class="s1">&#39;.csv&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="n">file_out</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Output folder must be a different name than input csv.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># check if command has been started alread</span>
+    <span class="k">if</span> <span class="n">file_out</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">fo</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_out</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fo</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">file_out</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;deviceCode,dateFrom,dateTo,locationCode,deviceCategoryCode,downloaded</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># download files</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_download_ts_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">onc</span><span class="p">,</span> <span class="n">category_code</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">fo</span><span class="p">,</span> <span class="n">nworkers</span><span class="p">)</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">onc</span><span class="o">.</span><span class="n">outPath</span> <span class="o">=</span> <span class="n">out_path</span>
+
+    <span class="k">if</span> <span class="n">out_merged</span><span class="p">:</span>
+        <span class="n">out_file</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="s1">&#39;_merged.csv&#39;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">merge_ts</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">out_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">na_rep</span><span class="o">=</span><span class="s1">&#39;NA&#39;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_merge_ts_helper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to merge data based on timestamps</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;Time_UTC&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">limit_area</span><span class="o">=</span><span class="s1">&#39;inside&#39;</span><span class="p">)</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge_asof</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;_NEW&#39;</span><span class="p">),</span> <span class="n">tolerance</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">tolerance</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">),</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+    <span class="n">cnames</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+    <span class="n">cnames_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">cname</span> <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">cnames</span> <span class="k">if</span> <span class="s1">&#39;_NEW&#39;</span> <span class="ow">in</span> <span class="n">cname</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">cname_new</span> <span class="ow">in</span> <span class="n">cnames_new</span><span class="p">:</span>
+        <span class="n">cname</span> <span class="o">=</span> <span class="n">cname_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">tmp</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">cname</span><span class="p">]</span><span class="o">.</span><span class="n">combine_first</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="n">cname_new</span><span class="p">])</span>
+
+    <span class="n">tmp</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">cnames_new</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tmp</span>
+
+
+<div class="viewcode-block" id="read_ts"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.read_ts">[docs]</a><span class="k">def</span> <span class="nf">read_ts</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read time series files from ONC and convert to a dataFrame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    file : str</span>
+<span class="sd">        Path to a .csv file of time series scalar data (tssd) returned from Oceans.</span>
+<span class="sd">    units : bool, default True</span>
+<span class="sd">        Include units of the vairables in the column names. If False, units are removed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        A dataFrame from the csv file.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the first 100 lines</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)]</span>
+
+    <span class="c1"># Find the index of &#39;## END HEADER&#39;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;## END HEADER&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># Extract column names</span>
+    <span class="n">cnames</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">cnames</span> <span class="o">=</span> <span class="n">cnames</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="p">)</span>
+    <span class="n">cnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">cname</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">cnames</span><span class="p">]</span>
+    <span class="n">cnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Time_UTC&#39;</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="ow">not</span> <span class="s1">&#39;QC Flag&#39;</span> <span class="ow">in</span> <span class="n">cname</span> <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">cnames</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">units</span><span class="p">:</span>
+        <span class="n">cnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\([^)]*\)&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">cname</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="n">cnames</span><span class="p">]</span>
+
+    <span class="c1"># Read the rest of the file using pandas</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">skipinitialspace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">cnames</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
+    <span class="n">out</span><span class="p">[</span><span class="s1">&#39;Time_UTC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;Time_UTC&#39;</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">Z&#39;</span><span class="p">,</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="merge_ts"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.merge_ts">[docs]</a><span class="k">def</span> <span class="nf">merge_ts</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">ts_data</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Merge timeseries data with timestamps</span>
+
+<span class="sd">    This function will get the timestamps from source and retrive the</span>
+<span class="sd">    closest data avaiable inside the ts_data folder. If source is a</span>
+<span class="sd">    DataFrame or a .csv file, it should have a column timestamp or</span>
+<span class="sd">    filename, from which timestamps will be derived (filenames must follow</span>
+<span class="sd">    Oceans naming convention)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source : str or pandas.DataFrame</span>
+<span class="sd">        A pandas DataFrame, a path to .csv file, or a Glob pattern to</span>
+<span class="sd">        match multiple files (use *)</span>
+<span class="sd">    ts_data : str</span>
+<span class="sd">        Folder containg csv files downloaded from Oceans 3</span>
+<span class="sd">    tolerance : float</span>
+<span class="sd">        Tolarance, in seconds, for timestamps to be merged. If the nearest</span>
+<span class="sd">        data avaiable from a given timestamp is higher than the tolarance,</span>
+<span class="sd">        then a NaN is returned instead.</span>
+<span class="sd">    units : bool, default True</span>
+<span class="sd">        Include units of the vairables in the column names. If False, units are removed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        The dataFrame from source, with variables within ts_data</span>
+<span class="sd">        merged based on the timestamps</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parse_file_path</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;urlfile&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ts_bk</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="s1">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[[</span><span class="s1">&#39;ts&#39;</span><span class="p">,</span> <span class="s1">&#39;dc&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">name_to_timestamp_dc</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s1">&#39;timestamp&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="p">:</span>
+            <span class="n">ts_bk</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;ts&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;timestamp&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Columns &#39;filename&#39; or &#39;timestamp&#39; must be provided&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;only &#39;timestamp&#39; column was provided. Assuming timestamps and data&quot;</span>
+            <span class="s2">&quot;in &#39;ts_data&#39; are associated with a single device&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;tmp&quot;</span>
+
+    <span class="n">ts_folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">ts_data</span><span class="p">)</span>
+    <span class="n">ts_folder_csv</span> <span class="o">=</span> <span class="n">ts_folder</span> <span class="o">/</span> <span class="p">(</span><span class="n">ts_data</span> <span class="o">+</span> <span class="s1">&#39;.csv&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ts_folder_csv</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">ts_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">ts_folder_csv</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">ts_folder_csv</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found. Assuming all files in </span><span class="si">{</span><span class="n">ts_data</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;are from the same location. If timelapses and files are from different&quot;</span>
+            <span class="s2">&quot;locations and overlap in time, the merge operations will be wrong!&quot;</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">ts_folder</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.jpg&quot;</span><span class="p">)</span>
+        <span class="n">ts_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">:</span> <span class="s1">&#39;tmp&#39;</span><span class="p">,</span> <span class="s1">&#39;downloaded&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">d</span><span class="p">)})</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">df_out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dc</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;dc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">ts_data_dc</span> <span class="o">=</span> <span class="n">ts_data</span><span class="p">[</span><span class="n">ts_data</span><span class="p">[</span><span class="s1">&#39;deviceCode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dc</span><span class="p">]</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;dc&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dc</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ts_data_dc</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">read_ts</span><span class="p">(</span><span class="n">ts_folder</span> <span class="o">/</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;downloaded&#39;</span><span class="p">],</span> <span class="n">units</span><span class="p">)</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">_merge_ts_helper</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">)</span>
+
+        <span class="n">df_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+    <span class="n">df_out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">df_out</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ts_bk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">df_out</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span> <span class="s1">&#39;dc&#39;</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df_out</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ts_bk</span>
+        <span class="n">df_out</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">&#39;dc&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df_out</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Paulo Correa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

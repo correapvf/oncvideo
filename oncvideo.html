@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oncvideo package &mdash; oncvideo 1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/function.css?v=3a7abf9d" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=0264ad83"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="oncvideo" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            oncvideo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">oncvideo package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.didson_info"><code class="docutils literal notranslate"><span class="pre">didson_info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.download_files"><code class="docutils literal notranslate"><span class="pre">download_files()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.download_ts"><code class="docutils literal notranslate"><span class="pre">download_ts()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.extract_fov"><code class="docutils literal notranslate"><span class="pre">extract_fov()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.extract_frame"><code class="docutils literal notranslate"><span class="pre">extract_frame()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.get_dives"><code class="docutils literal notranslate"><span class="pre">get_dives()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.list_file"><code class="docutils literal notranslate"><span class="pre">list_file()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.list_file_batch"><code class="docutils literal notranslate"><span class="pre">list_file_batch()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.merge_ts"><code class="docutils literal notranslate"><span class="pre">merge_ts()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.onc"><code class="docutils literal notranslate"><span class="pre">onc()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.read_ddf"><code class="docutils literal notranslate"><span class="pre">read_ddf()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.read_ts"><code class="docutils literal notranslate"><span class="pre">read_ts()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.st_download"><code class="docutils literal notranslate"><span class="pre">st_download()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.st_link"><code class="docutils literal notranslate"><span class="pre">st_link()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.st_rename"><code class="docutils literal notranslate"><span class="pre">st_rename()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.to_mp4"><code class="docutils literal notranslate"><span class="pre">to_mp4()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oncvideo.video_info"><code class="docutils literal notranslate"><span class="pre">video_info()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">oncvideo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">oncvideo package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/oncvideo.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-oncvideo">
+<span id="oncvideo-package"></span><h1>oncvideo package<a class="headerlink" href="#module-oncvideo" title="Permalink to this heading"></a></h1>
+<p>Funtions exported by the package</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.didson_info">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">didson_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DIDSON_info.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/didson_file.html#didson_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.didson_info" title="Permalink to this definition"></a></dt>
+<dd><p>Get information from DIDSON file</p>
+<p>Include file timestamp, duration, fps, number of beams and samples,
+window start (distance from DIDSON to first sample) and window length
+(distance from first sample to the last).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id1"><span class="problematic" id="id2">*</span></a>)</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'DIDSON_info.csv'</em>) – Name of the csv file to save video information</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.download_files">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">download_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'output'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/download_files.html#download_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.download_files" title="Permalink to this definition"></a></dt>
+<dd><p>Download files from the table provided by source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, or a path to .csv file</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'output'</em>) – Name of the output folder to save converted videos</p></li>
+<li><p><strong>trim</strong> (<em>bool</em><em>, </em><em>default False</em>) – Trim video files to match the initial seach query</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.download_ts">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">download_ts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'output'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_merged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nworkers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/ts_download.html#download_ts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.download_ts" title="Permalink to this definition"></a></dt>
+<dd><p>Donwload timeseries data for video files</p>
+<p>Based on the filenames that are passed in the source, this function will
+download time series scalar data (tssd) that corresponds to the same
+time period as the filenames.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id3"><span class="problematic" id="id4">*</span></a>).</p></li>
+<li><p><strong>category_code</strong> (<em>str</em><em> or </em><em>list</em>) – Category Code of data to download. E.g. NAV, CTD, OXYSENSOR, etc.</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'output'</em>) – Name of the output folder to save files.</p></li>
+<li><p><strong>clean</strong> (<em>bool</em><em>, </em><em>default True</em>) – Return clean data from the API call (values with bad flags are removed),
+else return raw data.</p></li>
+<li><p><strong>out_merged</strong> (<em>bool</em><em>, </em><em>default False</em>) – If True, the function <a class="reference internal" href="#oncvideo.merge_ts" title="oncvideo.merge_ts"><code class="xref py py-func docutils literal notranslate"><span class="pre">merge_ts()</span></code></a> will run automatically
+after tssd is downloaded and save the merged file as <cite>{output}_merged.csv</cite>.</p></li>
+<li><p><strong>nworkers</strong> (<em>int</em><em>, </em><em>default 20</em>) – Number of simultaneous API calls to make</p></li>
+<li><p><strong>**kwargs</strong> – <cite>tolerance</cite> and <cite>units</cite> passed to <a class="reference internal" href="#oncvideo.merge_ts" title="oncvideo.merge_ts"><code class="xref py py-func docutils literal notranslate"><span class="pre">merge_ts()</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The dataFrame generated from source, with variables within ts_data
+merged based on the timestamps</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.extract_fov">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">extract_fov</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fovs'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deinterlace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/extract_frame.html#extract_fov"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.extract_fov" title="Permalink to this definition"></a></dt>
+<dd><p>Extract FOVs from videos</p>
+<p>Extract framegrabs or clips for each video at given timestamps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id5"><span class="problematic" id="id6">*</span></a>)</p></li>
+<li><p><strong>timestamps</strong> (<em>str</em><em>, </em><em>float</em><em>, or </em><em>list</em>) – A timestamp or a list of timestaps where the framegrabs will be extracted.
+Can be a float indicating the number of seconds or a string in the format
+mm:ss.f, from the start of the video. If None (the default), it will try to
+get the timestamps from the column ‘fovs’ in the source.</p></li>
+<li><p><strong>duration</strong> (<em>float</em>) – If provided, the function will get clips instead of framegrabs, with
+duration given in seconds. The start of the clips are given by ‘timestamps’.</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'fovs'</em>) – Name of the output folder to save images/videos.</p></li>
+<li><p><strong>deinterlace</strong> (<em>bool</em><em>, </em><em>default False</em>) – Deinterlace video before getting the frames. This argument is ignored
+for clips, since the stream is copyied from the original video.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.extract_frame">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">extract_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'frames'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deinterlace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rounding_near</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/extract_frame.html#extract_frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.extract_frame" title="Permalink to this definition"></a></dt>
+<dd><p>Extract frames at a given interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id7"><span class="problematic" id="id8">*</span></a>)</p></li>
+<li><p><strong>interval</strong> (<em>float</em>) – Interval, in seconds, to extract frames (e.g. a value of 10 will
+extract one frame every 10 seconds).</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'output'</em>) – Name of the output folder to save converted videos</p></li>
+<li><p><strong>trim</strong> (<em>bool</em><em>, </em><em>default False</em>) – Trim video files to match the initial seach query</p></li>
+<li><p><strong>deinterlace</strong> (<em>bool</em><em>, </em><em>default False</em>) – Deinterlace video before getting the frames.</p></li>
+<li><p><strong>rounding_near</strong> (<em>bool</em><em>, </em><em>default False</em>) – Grab frames at the middle of each interval (default ffmpeg
+behaviour). If False, will grab frames at the start of each interval.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.get_dives">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">get_dives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/dives_onc.html#get_dives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.get_dives" title="Permalink to this definition"></a></dt>
+<dd><p>Return all dives from Oceans3.0</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>cache</strong> (<em>bool</em><em>, </em><em>default True</em>) – Save file at home folder and use it for future calls if the
+file is recent (less the 30 days).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DataFrame that includes dives code, start and end times
+for the dive, deviceCode and locationCode.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.list_file">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">list_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceCode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceId</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locationCode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceCategoryCode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'VIDEOCAM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dateFrom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dateTo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ask'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mp4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/list_files.html#list_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.list_file" title="Permalink to this definition"></a></dt>
+<dd><p>Get list of files archived in Oceans 3.0</p>
+<p>Search archived files based on one of the following criterias: decideCode,
+deviceId, locationCode and dive number. One of these parameters need to
+be suplied to the function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>deviceCode</strong> (<em>str</em>) – Devide code to seach files</p></li>
+<li><p><strong>deviceId</strong> (<em>str</em><em> or </em><em>int</em>) – Devide Id to seach files</p></li>
+<li><p><strong>locationCode</strong> (<em>str</em>) – Location code to seach files</p></li>
+<li><p><strong>dive</strong> (<em>str</em>) – Dive number to seach files</p></li>
+<li><p><strong>deviceCategoryCode</strong> (<em>str</em><em>, </em><em>default VIDEOCAM</em>) – Device category code to search files. Only used when locationCode is suplied.
+Usually ‘VIDEOCAM’ for fixed cameras and ‘ROV_CAMERA’ for ROVs.
+‘ask’ will list avaiable options and ask user to choose one.</p></li>
+<li><p><strong>dateFrom</strong> (<em>str</em><em> or </em><em>datetime</em>) – Return videos after specified datetime. Can be any format that is parsed
+by pandas.to_datetime. If None, will search all videos since the device
+was first deployed.</p></li>
+<li><p><strong>dateFrom</strong> – Return videos before specified datetime. Can be any format that is parsed
+by pandas.to_datetime. If None, will search all videos until the current
+date.</p></li>
+<li><p><strong>quality</strong> (<em>str</em><em>, </em><em>default ask</em>) – Especify a quality to filter videos. Usually should be LOW, standard,
+1500, 5000, UHD. ‘ask’ will list avaiable options and ask user to choose one.
+‘all’ will get all avaiable videos. Accepts multiple values as comma separated.</p></li>
+<li><p><strong>extension</strong> (<em>str</em><em>, </em><em>default mp4</em>) – Especify a extension to filter videos. ‘ask’ will list avaiable options and
+ask user to choose one. ‘all’ will get all avaiable videos.
+Accepts multiple values as comma separated.</p></li>
+<li><p><strong>statistics</strong> (<em>bool</em><em>, </em><em>default True</em>) – Also save video durations and file sizes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DataFrame with the filenames, and videos duration and file sizes if
+statistics is True</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.list_file_batch">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">list_file_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">csvfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ask'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mp4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/list_files.html#list_file_batch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.list_file_batch" title="Permalink to this definition"></a></dt>
+<dd><p>Batch list of files archived in Oceans 3.0
+List video files based on parameters stored in a csv file</p>
+<p>This function will execute multiple search for archived files based on parameters stored
+in a csv file. Usefull to get videos from multiple sites and/or dives.
+Column names must be one of decideCode, deviceId, locationCode or dive.
+Csv may also include parameters dateFrom, dateTo, and deviceCategoryCode.
+Details on these parameters can be found in ‘list_file’ function. A column named ‘group’
+can also be used to distingshed each query in the final table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>csvfile</strong> (<em>str</em><em>, </em><em>path object</em><em> or </em><em>file-like object</em>) – Location to the input csv file.</p></li>
+<li><p><strong>quality</strong> (<em>str</em><em>, </em><em>default ask</em>) – Especify a quality to filter videos. Usually should be LOW, standard,
+1500, 5000, UHD. ‘ask’ will list avaiable options and ask user to choose one.
+‘all’ will get all avaiable videos. Accepts multiple values as comma separated.</p></li>
+<li><p><strong>extension</strong> (<em>str</em><em>, </em><em>default mp4</em>) – Especify a extension to filter videos. ‘ask’ will list avaiable options and
+ask user to choose one. ‘all’ will get all avaiable videos.
+Accepts multiple values as comma separated.</p></li>
+<li><p><strong>statistics</strong> (<em>bool</em><em>, </em><em>default True</em>) – Also save video durations and file sizes.</p></li>
+<li><p><strong>keep_cols</strong> (<em>bool</em><em>, </em><em>default False</em>) – Keep other columns from csvfile into the output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DataFrame with the filenames, and videos duration and file sizes if
+statistics is True</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.merge_ts">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">merge_ts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/ts_download.html#merge_ts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.merge_ts" title="Permalink to this definition"></a></dt>
+<dd><p>Merge timeseries data with timestamps</p>
+<p>This function will get the timestamps from source and retrive the
+closest data avaiable inside the ts_data folder. If source is a
+DataFrame or a .csv file, it should have a column timestamp or
+filename, from which timestamps will be derived (filenames must follow
+Oceans naming convention)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id9"><span class="problematic" id="id10">*</span></a>)</p></li>
+<li><p><strong>ts_data</strong> (<em>str</em>) – Folder containg csv files downloaded from Oceans 3</p></li>
+<li><p><strong>tolerance</strong> (<em>float</em>) – Tolarance, in seconds, for timestamps to be merged. If the nearest
+data avaiable from a given timestamp is higher than the tolarance,
+then a NaN is returned instead.</p></li>
+<li><p><strong>units</strong> (<em>bool</em><em>, </em><em>default True</em>) – Include units of the vairables in the column names. If False, units are removed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The dataFrame from source, with variables within ts_data
+merged based on the timestamps</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.onc">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">onc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/onc.html#onc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.onc" title="Permalink to this definition"></a></dt>
+<dd><p>Create an ONC class object</p>
+<p>Create an ONC class object, but try to use environment variables to get the API token.
+The token must stored under ‘ONC_API_TOKEN’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>token</strong> (<em>str</em>) – ONC API token</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ONC class object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>onc.ONC</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.read_ddf">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">read_ddf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">urlfile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/didson_file.html#read_ddf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.read_ddf" title="Permalink to this definition"></a></dt>
+<dd><p>Get data from DIDSON file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>urlfile</strong> (<em>str</em>) – Path to a file or a URL.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>numpy.array</em> – A 1d array with the timestamp for each frame.</p></li>
+<li><p><em>numpy.array</em> – A 3d array as [frame, Beams, Samples].</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.read_ts">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">read_ts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/ts_download.html#read_ts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.read_ts" title="Permalink to this definition"></a></dt>
+<dd><p>Read time series files from ONC and convert to a dataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>str</em>) – Path to a .csv file of time series scalar data (tssd) returned from Oceans.</p></li>
+<li><p><strong>units</strong> (<em>bool</em><em>, </em><em>default True</em>) – Include units of the vairables in the column names. If False, units are removed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dataFrame from the csv file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.st_download">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">st_download</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mov'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext_frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/seatube.html#st_download"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.st_download" title="Permalink to this definition"></a></dt>
+<dd><p>Download video from Seatube</p>
+<p>Download the correspoding video based on the Seatube link provided.
+Useful for downloading the high-res video that is not avaiable in Seatube.
+Only supports Seatube V3. Video is saved at current working directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>url</strong> (<em>str</em>) – The link generated by Seatube V3. E.g.
+<cite>https://data.oceannetworks.ca/SeaTubeV3?resourceTypeId=600&amp;resourceId=4371&amp;time=2023-09-13T20:43:09.000Z</cite></p></li>
+<li><p><strong>ext</strong> (<em>str</em><em>, </em><em>default mov</em>) – Especify a extension of the video to be downloaded.</p></li>
+<li><p><strong>ext_frame</strong> (<em>bool</em><em>, </em><em>default False</em>) – If True, also extract a frame correspoding to the same timestamp as the url.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.st_link">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">st_link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/seatube.html#st_link"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.st_link" title="Permalink to this definition"></a></dt>
+<dd><p>Generate Seatube link</p>
+<p>Generate a Seatube link from filenames following the Oceans 3 naming
+convention (deviceCode_timestamp.ext). For now, only supports video avaiable
+in Seatube V3 (videos from ROV cameras).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onc</strong> (<em>onc.ONC</em>) – ONC class object</p></li>
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id11"><span class="problematic" id="id12">*</span></a>). If a DataFrame or a .csv file,
+it must have a column ‘filename’ and, optionally, ‘timestamp’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The dataFrame from source, with new column <cite>url</cite> with corresponding
+Seatube links.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.st_rename">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">st_rename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/seatube.html#st_rename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.st_rename" title="Permalink to this definition"></a></dt>
+<dd><p>Rename framegrabs from Seatube to correct timestamp</p>
+<p>Correct the timestamp based in the offest of the image that is
+captured in Seatube. E.g. a file like <cite>deviceCode_20230913T200203.000Z-003.jpeg</cite>
+is renamed to <cite>deviceCode_20230913T200201.000Z.jpeg</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Filename to be corrected.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>If possible, the corrected filename, or else it will return the same filename.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.to_mp4">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">to_mp4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'output'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deinterlace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_audio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yuv420</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h265</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/download_files.html#to_mp4"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.to_mp4" title="Permalink to this definition"></a></dt>
+<dd><p>Convert video to mp4</p>
+<p>Videos are encoded to mp4 (h264) constrained by quality
+(Constant Rate Factor), with a faststart option for web video,
+and constant framerate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id13"><span class="problematic" id="id14">*</span></a>)</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'output'</em>) – Name of the output folder to save converted videos</p></li>
+<li><p><strong>trim</strong> (<em>bool</em><em>, </em><em>default False</em>) – Trim video files to match the initial seach query</p></li>
+<li><p><strong>deinterlace</strong> (<em>bool</em><em>, </em><em>default False</em>) – Deinterlace video.</p></li>
+<li><p><strong>crf</strong> (<em>int</em><em>, </em><em>defalt None</em>) – Set CRF (quality level) in ffmpeg. The default will use the
+default value from ffmpeg.</p></li>
+<li><p><strong>keep_audio</strong> (<em>bool</em><em>, </em><em>default False</em>) – Keep audio in the video? Default is to remove de audio.</p></li>
+<li><p><strong>yuv420</strong> (<em>bool</em><em>, </em><em>defalt False</em>) – Force YUV planar color space with 4:2:0 chroma subsampling.
+May be needed to display video in some players/browsers.</p></li>
+<li><p><strong>h265</strong> (<em>bool</em><em>, </em><em>defalt False</em>) – Use H.265 encoding instead of H.264. H.265 offers a higher
+compression, but may not be supported by some players/browsers.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="oncvideo.video_info">
+<span class="sig-prename descclassname"><span class="pre">oncvideo.</span></span><span class="sig-name descname"><span class="pre">video_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'video_info.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_interlaced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oncvideo/video_info.html#video_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oncvideo.video_info" title="Permalink to this definition"></a></dt>
+<dd><p>Get video information</p>
+<p>Include video codec, pixel format, bitrate, fps, fps mode (constant or variable), scan type (
+progressive or interlaced), aspect ratio, width, height, duration and file size.
+Note that scan type is based in the video metadata, unless check_interlaced is set to True,
+where idet filter is used to check scan type. Video duration is based from the file, and may
+differ from the duration returned by ‘list’ or ‘blist’, which is based on the API call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>str</em><em> or </em><em>pandas.DataFrame</em>) – A pandas DataFrame, a path to .csv file, or a Glob pattern to
+match multiple files (use <a href="#id15"><span class="problematic" id="id16">*</span></a>)</p></li>
+<li><p><strong>output</strong> (<em>str</em><em>, </em><em>default 'video_info.csv'</em>) – Name of the csv file to save video information</p></li>
+<li><p><strong>check_interlaced</strong> (<em>bool</em><em>, </em><em>default False</em>) – Use the idet filter from ffmpeg to check if video is interlaced.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="oncvideo" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Paulo Correa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

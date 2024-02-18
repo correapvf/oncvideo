@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oncvideo.video_info &mdash; oncvideo 1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=0264ad83"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            oncvideo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../oncvideo.html">oncvideo package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">oncvideo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">oncvideo.video_info</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for oncvideo.video_info</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Get parameters from videos&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">subprocess</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">strftd</span><span class="p">,</span> <span class="n">parse_file_path</span>
+
+<span class="k">def</span> <span class="nf">_meta_video</span><span class="p">(</span><span class="n">urlfile</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create ffprobe command and run to get</span>
+<span class="sd">    parameters from videos</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ffprobe_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ffprobe&#39;</span><span class="p">,</span> <span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;quiet&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;-select_streams&#39;</span><span class="p">,</span> <span class="s1">&#39;v:0&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;-show_entries&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;stream=codec_name,pix_fmt,bit_rate,&#39;</span>
+                        <span class="s1">&#39;display_aspect_ratio,width,height,r_frame_rate,&#39;</span>
+                        <span class="s1">&#39;avg_frame_rate,field_order:format=size,duration&#39;</span><span class="p">),</span>
+                    <span class="s1">&#39;-of&#39;</span><span class="p">,</span> <span class="s1">&#39;json&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="n">urlfile</span><span class="p">]</span>
+
+    <span class="n">out_raw</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">ffprobe_cmd</span><span class="p">)</span>
+    <span class="n">out_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">out_raw</span><span class="p">)</span>
+
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;streams&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># define variables</span>
+    <span class="n">codec</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;codec_name&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;codec_name&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">pix_fmt</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;pix_fmt&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;pix_fmt&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">bit_rate</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="s1">&#39;bit_rate&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">1000</span>  <span class="k">if</span> <span class="s2">&quot;bit_rate&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">aspect</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;display_aspect_ratio&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;display_aspect_ratio&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;N/A&#39;</span>
+    <span class="n">frame_w</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;width&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">frame_h</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;height&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">fps_set</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;r_frame_rate&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;r_frame_rate&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">fps_avg</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;avg_frame_rate&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;avg_frame_rate&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">scan_type</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="s1">&#39;field_order&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;field_order&quot;</span> <span class="ow">in</span> <span class="n">stream</span> <span class="k">else</span> <span class="s1">&#39;unknown&#39;</span>
+    <span class="n">file_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="mf">9.5367431640625e-07</span>
+    <span class="n">nseconds</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">][</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+
+    <span class="c1"># check if video is interlaced or not</span>
+    <span class="k">if</span> <span class="n">check_interlaced</span><span class="p">:</span>
+        <span class="n">ffprobe_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">,</span> <span class="s1">&#39;-ss&#39;</span><span class="p">,</span> <span class="s1">&#39;00:00:01&#39;</span>
+                    <span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="n">urlfile</span><span class="p">,</span>
+                    <span class="s1">&#39;-frames:v&#39;</span><span class="p">,</span> <span class="s1">&#39;30&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;-vf&#39;</span><span class="p">,</span> <span class="s1">&#39;idet,metadata=print:file=-&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="s1">&#39;null&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">]</span>
+
+        <span class="n">out_raw</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">ffprobe_cmd</span><span class="p">)</span>
+        <span class="n">out_str</span> <span class="o">=</span> <span class="n">out_raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">out_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">tally</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="s2">&quot;lavfi.idet.multiple.current_frame&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+        <span class="n">scan_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">tally</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">fps</span> <span class="o">=</span> <span class="n">fps_avg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="n">fps</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">fps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">fps</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">fps_mode</span> <span class="o">=</span> <span class="s1">&#39;Constant&#39;</span> <span class="k">if</span> <span class="n">fps_avg</span><span class="o">==</span><span class="n">fps_set</span> <span class="k">else</span> <span class="s1">&#39;Variable&#39;</span>
+
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">strftd</span><span class="p">(</span><span class="n">nseconds</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">codec</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">pix_fmt</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">bit_rate</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">fps</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">fps_mode</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">scan_type</span><span class="si">}</span><span class="s1">,&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">aspect</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">frame_w</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">frame_h</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">file_size</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="video_info"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.video_info">[docs]</a><span class="k">def</span> <span class="nf">video_info</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;video_info.csv&#39;</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get video information</span>
+
+<span class="sd">    Include video codec, pixel format, bitrate, fps, fps mode (constant or variable), scan type (</span>
+<span class="sd">    progressive or interlaced), aspect ratio, width, height, duration and file size.</span>
+<span class="sd">    Note that scan type is based in the video metadata, unless check_interlaced is set to True,</span>
+<span class="sd">    where idet filter is used to check scan type. Video duration is based from the file, and may</span>
+<span class="sd">    differ from the duration returned by &#39;list&#39; or &#39;blist&#39;, which is based on the API call.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source : str or pandas.DataFrame</span>
+<span class="sd">        A pandas DataFrame, a path to .csv file, or a Glob pattern to</span>
+<span class="sd">        match multiple files (use *)</span>
+<span class="sd">    output : str, default &#39;video_info.csv&#39;</span>
+<span class="sd">        Name of the csv file to save video information</span>
+<span class="sd">    check_interlaced : bool, default False</span>
+<span class="sd">        Use the idet filter from ffmpeg to check if video is interlaced.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span><span class="p">,</span> <span class="n">has_group</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parse_file_path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+    <span class="c1"># configure csv</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;filename,codec,pix_fmt,bit_rate_kbps,fps,fps_mode,scan_type,&#39;</span>
+        <span class="s1">&#39;aspect_ratio,width,height,duration,fileSize_MB</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">seps</span> <span class="o">=</span> <span class="s1">&#39;,,,,,,,,,,&#39;</span>
+    <span class="k">if</span> <span class="n">has_group</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s1">&#39;group,&#39;</span> <span class="o">+</span> <span class="n">header</span>
+        <span class="n">seps</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="n">seps</span>
+
+    <span class="c1"># check if we have to create a new file or continue an existing job</span>
+    <span class="n">file_out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">file_out</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">count</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">count</span><span class="p">:]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2"> already exists! </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> files already processed,&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;skipping to remaining files.&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">(),</span> <span class="n">total</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+
+        <span class="n">to_write</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;group&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">has_group</span> <span class="k">else</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">_meta_video</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;urlfile&#39;</span><span class="p">],</span> <span class="n">check_interlaced</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">to_write</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">to_write</span><span class="si">}{</span><span class="n">seps</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Paulo Correa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
