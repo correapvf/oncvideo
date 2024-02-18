@@ -3,10 +3,6 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import os
-import sys
-current_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(os.path.join(current_dir, '..','..','src','oncvideo')))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -14,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(current_dir, '..','..','src','on
 project = 'oncvideo'
 copyright = '2024, Paulo Correa'
 author = 'Paulo Correa'
-release = '1.2'
+release = '1.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
