@@ -6,9 +6,11 @@ import pandas as pd
 from tqdm import tqdm
 from ._utils import strftd, parse_file_path
 
-def meta_video(urlfile, check_interlaced):
-    """Create ffprobe command and run to get
-    parameters from videos"""
+def _meta_video(urlfile, check_interlaced):
+    """
+    Create ffprobe command and run to get
+    parameters from videos
+    """
     ffprobe_cmd = ['ffprobe', '-v', 'quiet',
                     '-select_streams', 'v:0',
                     '-show_entries', ('stream=codec_name,pix_fmt,bit_rate,'
@@ -108,7 +110,7 @@ def video_info(source, output='video_info.csv', check_interlaced=False):
         to_write = f"{row['group']},{row['filename']}" if has_group else row['filename']
 
         try:
-            info = meta_video(row['urlfile'], check_interlaced)
+            info = _meta_video(row['urlfile'], check_interlaced)
             f.write(f'{to_write},{info}\n')
         except RuntimeError:
             f.write(f'{to_write}{seps}\n')

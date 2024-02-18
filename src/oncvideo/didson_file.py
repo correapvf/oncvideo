@@ -10,7 +10,7 @@ from tqdm import tqdm
 from ._utils import parse_file_path, strftd
 
 
-def handle_file(urlfile):
+def _handle_file(urlfile):
     """
     Return a file connection if string is a URL or a path to a file
     """
@@ -30,11 +30,11 @@ def handle_file(urlfile):
     return f
 
 
-def read_ddf_info(urlfile):
+def _read_ddf_info(urlfile):
     """
     Read headers of ddf v3 file, but skip actual data
     """
-    f = handle_file(urlfile)
+    f = _handle_file(urlfile)
 
     # https://wiki.oceannetworks.ca/download/attachments/49447779/DIDSON%20V5.26.26%20Data%20File%20and%20Ethernet%20Structure.pdf?version=1&modificationDate=1654558351000&api=v2
     # DDF_03
@@ -151,7 +151,7 @@ def read_ddf(urlfile):
     numpy.array
         A 3d array as [frame, Beams, Samples].
     """
-    f = handle_file(urlfile)
+    f = _handle_file(urlfile)
 
     # https://wiki.oceannetworks.ca/download/attachments/49447779/DIDSON%20V5.26.26%20Data%20File%20and%20Ethernet%20Structure.pdf?version=1&modificationDate=1654558351000&api=v2
     # DDF_03
@@ -199,8 +199,9 @@ def didson_info(source, output='DIDSON_info.csv'):
     Get information from DIDSON file
 
     Include file timestamp, duration, fps, number of beams and samples,
-    window start (distance from DIDSON to first sample) and window length (
-    distance from first sample to the last).
+    window start (distance from DIDSON to first sample) and window length
+    (distance from first sample to the last).
+
     Parameters
     ----------
     source : str or pandas.DataFrame
@@ -237,7 +238,7 @@ def didson_info(source, output='DIDSON_info.csv'):
         to_write = f"{row['group']},{row['filename']}" if has_group else row['filename']
 
         try:
-            info = read_ddf_info(row['urlfile'])
+            info = _read_ddf_info(row['urlfile'])
             f.write(f'{to_write},{info}\n')
         except RuntimeError:
             f.write(f'{to_write}{seps}\n')

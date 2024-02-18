@@ -9,7 +9,7 @@ import pandas as pd
 from ._utils import name_to_timestamp_dc, parse_file_path
 
 
-class HiddenPrints:
+class _HiddenPrints:
     """
     To prevent onc to print output when downloading files
     """
@@ -22,7 +22,7 @@ class HiddenPrints:
         sys.stdout = self._original_stdout
 
 
-def download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
+def _download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
     """
     Helper function to download time series data
     """
@@ -96,7 +96,7 @@ def download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
 
                     to_write = f"{name[0]},{date_o_from},{date_o_to},{lc},{cc}"
 
-                    futures.append(executor.submit(execute_download, onc, filters, f, to_write))
+                    futures.append(executor.submit(_execute_download, onc, filters, f, to_write))
 
         pbar = tqdm(total=nloop, desc = 'Processed files')
         for _ in as_completed(futures):
@@ -104,12 +104,12 @@ def download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
         pbar.close()
 
 
-def execute_download(onc, filters, f, to_write):
+def _execute_download(onc, filters, f, to_write):
     """
     function passed to thread
     """
     try:
-        with HiddenPrints():
+        with _HiddenPrints():
             result3 = onc.orderDataProduct(filters, includeMetadataFile=False)
 
         for file in result3['downloadResults']:
@@ -186,7 +186,7 @@ def download_ts(onc, source, category_code, output='output',
 
     # download files
     try:
-        download_ts_helper(df, onc, category_code, clean, f, fo, nworkers)
+        _download_ts_helper(df, onc, category_code, clean, f, fo, nworkers)
 
     finally:
         f.close()
@@ -198,7 +198,7 @@ def download_ts(onc, source, category_code, output='output',
         out.to_csv(out_file, index=False, na_rep='NA')
 
 
-def merge_ts_helper(data, tmp, tolerance):
+def _merge_ts_helper(data, tmp, tolerance):
     """
     Helper function to merge data based on timestamps
     """
@@ -333,7 +333,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
 
         for _, row in ts_data_dc.iterrows():
             data = read_ts(ts_folder / row['downloaded'], units)
-            tmp = merge_ts_helper(data, tmp, tolerance)
+            tmp = _merge_ts_helper(data, tmp, tolerance)
 
         df_out.append(tmp)
 

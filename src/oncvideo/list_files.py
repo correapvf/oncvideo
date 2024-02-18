@@ -3,7 +3,7 @@ import pandas as pd
 from ._utils import sizeof_fmt, strftd, name_to_timestamp
 from .dives_onc import get_dives
 
-def ask_options(results, ivalue, ihelp):
+def _ask_options(results, ivalue, ihelp):
     """
     List option and ask user to select which result they want to keep
     """
@@ -32,7 +32,7 @@ def ask_options(results, ivalue, ihelp):
     print('You selected: ' + out)
     return out
 
-def ask_options_multiple(results, ivalue):
+def _ask_options_multiple(results, ivalue):
     """
     List option and ask user to select which result they want to keep
     Allows multiple values to be choosen
@@ -64,7 +64,7 @@ def ask_options_multiple(results, ivalue):
     return out
 
 
-def list_file_helper(df, statistics, extension, quality, cols_to_keep):
+def _list_file_helper(df, statistics, extension, quality, cols_to_keep):
     """
     Helper function to get the API output and filter unwanted
     files and format columns
@@ -84,7 +84,7 @@ def list_file_helper(df, statistics, extension, quality, cols_to_keep):
 
     if len(extn) > 1:
         if extension == 'ask':
-            extension = ask_options_multiple(extn, "extension")
+            extension = _ask_options_multiple(extn, "extension")
 
         if extension != 'all':
             extension = extension.split(',')
@@ -100,7 +100,7 @@ def list_file_helper(df, statistics, extension, quality, cols_to_keep):
         if len(qualityn) > 1:
 
             if quality == 'ask':
-                quality = ask_options_multiple(qualityn, "quality")
+                quality = _ask_options_multiple(qualityn, "quality")
 
             if quality != 'all':
                 quality = quality.split(',')
@@ -178,7 +178,7 @@ def list_file_helper(df, statistics, extension, quality, cols_to_keep):
     return df[cols_new]
 
 
-def list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
+def _list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
     """
     Get file list by device code
     """
@@ -191,10 +191,10 @@ def list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
         }
 
     result = onc.getListByDevice(filters, allPages=True)
-    return api_to_df(result, dateFrom, dateTo, statistics)
+    return _api_to_df(result, dateFrom, dateTo, statistics)
 
 
-def list_file_lc(onc, locationCode, deviceCategoryCode,
+def _list_file_lc(onc, locationCode, deviceCategoryCode,
                dateFrom, dateTo, statistics):
     """
     Get file list by location code
@@ -203,7 +203,7 @@ def list_file_lc(onc, locationCode, deviceCategoryCode,
         filters = {'locationCode': locationCode}
         results = onc.getDeviceCategories(filters)
 
-        deviceCategoryCode = ask_options(results, 'deviceCategoryCode', 'deviceCategoryName')
+        deviceCategoryCode = _ask_options(results, 'deviceCategoryCode', 'deviceCategoryName')
 
     returnOptions = 'all' if statistics else None
     filters = {
@@ -215,10 +215,10 @@ def list_file_lc(onc, locationCode, deviceCategoryCode,
     }
 
     result = onc.getListByLocation(filters, allPages=True)
-    return api_to_df(result, dateFrom, dateTo, statistics)
+    return _api_to_df(result, dateFrom, dateTo, statistics)
 
 
-def api_to_df(result, dateFrom, dateTo, statistics):
+def _api_to_df(result, dateFrom, dateTo, statistics):
     """
     Extract output from the API
     """
@@ -286,10 +286,10 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
         dateTo = pd.to_datetime(dateTo, utc=True).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
     if deviceCode:
-        df = list_file_dc(onc, deviceCode, dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
+        df = _list_file_dc(onc, deviceCode, dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
 
     elif locationCode:
-        df = list_file_lc(onc, locationCode, deviceCategoryCode=deviceCategoryCode,
+        df = _list_file_lc(onc, locationCode, deviceCategoryCode=deviceCategoryCode,
             dateFrom=dateFrom, dateTo=dateTo, statistics=statistics)
 
     elif dive:
@@ -305,18 +305,18 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
         if dateTo is None:
             dateTo = result['endDate'].values[0]
 
-        df = list_file_dc(onc, result['deviceCode'].values[0],
+        df = _list_file_dc(onc, result['deviceCode'].values[0],
             dateFrom = dateFrom, dateTo = dateTo, statistics=statistics)
 
     elif deviceId:
         result=onc.getDevices({'deviceId': deviceId})
-        df = list_file_dc(onc, result[0]['deviceCode'], dateFrom=dateFrom,
+        df = _list_file_dc(onc, result[0]['deviceCode'], dateFrom=dateFrom,
             dateTo=dateTo, statistics=statistics)
 
     else:
         raise ValueError("One of {deviceCode, deviceId, locationCode, dive} is required")
 
-    df = list_file_helper(df, statistics, extension, quality, None)
+    df = _list_file_helper(df, statistics, extension, quality, None)
 
     return df
 
@@ -422,7 +422,7 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
 
     if dc:
         for _, row in file.iterrows():
-            df_tmp = list_file_dc(onc, row['deviceCode'], dateFrom=row['dateFrom'],
+            df_tmp = _list_file_dc(onc, row['deviceCode'], dateFrom=row['dateFrom'],
                 dateTo=row['dateTo'], statistics=statistics)
             y = row[cols_to_keep_g].to_dict()
             df_tmp = df_tmp.assign(**y)
@@ -432,7 +432,7 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
             raise ValueError("'deviceCategoryCode' must be a column in the csv file when using locationCode.")
 
         for _, row in file.iterrows():
-            df_tmp = list_file_lc(onc, row['locationCode'], deviceCategoryCode=row['deviceCategoryCode'],
+            df_tmp = _list_file_lc(onc, row['locationCode'], deviceCategoryCode=row['deviceCategoryCode'],
                 dateFrom=row['dateFrom'], dateTo=row['dateTo'], statistics=statistics)
             y = row[cols_to_keep_g].to_dict()
             df_tmp = df_tmp.assign(**y)
@@ -440,6 +440,6 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
 
     df = pd.concat(df)
 
-    df = list_file_helper(df, statistics, extension, quality, cols_to_keep)
+    df = _list_file_helper(df, statistics, extension, quality, cols_to_keep)
 
     return df

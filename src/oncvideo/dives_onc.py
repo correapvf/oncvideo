@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 import pandas as pd
 
-def check_time(dives):
+def _check_time(dives):
     """
     Check if file as modify less than 30 days ago
     """
@@ -15,7 +15,7 @@ def check_time(dives):
     return timediff < timedelta(days=30)
 
 
-def get_dives_api(onc):
+def _get_dives_api(onc):
     """
     function to get dives table from Seatube V3
     """
@@ -86,12 +86,12 @@ def get_dives(onc, cache=True):
     """
     dives = Path.home() / ".dives_ONC.csv"
 
-    if cache and dives.is_file() and check_time(dives):
+    if cache and dives.is_file() and _check_time(dives):
         df = pd.read_csv(dives)
 
     else:
         # get a new dive file
-        df = get_dives_api(onc)
+        df = _get_dives_api(onc)
         if cache:
             df.to_csv(dives, index=False)
 

@@ -3,7 +3,7 @@ from ._utils import run_ffmpeg, name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg
 
 
-def ffmpeg_run_download(input_file, output_file, skip, params, f, subfolder, video_name):
+def _ffmpeg_run_download(input_file, output_file, skip, params, f, subfolder, video_name):
     """
     Create and run ffmpeg command and save csv file
     """
@@ -42,10 +42,10 @@ def download_files(source, output='output', trim=False):
 
     params = ['-c', 'copy']
 
-    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_download, params, True)
+    iterate_ffmpeg(source, output, header, trim, _ffmpeg_run_download, params, True)
 
 
-def ffmpeg_run_mp4(input_file, output_file, skip, params, f, subfolder, video_name):
+def _ffmpeg_run_mp4(input_file, output_file, skip, params, f, subfolder, video_name):
     """
     Create and run ffmpeg command and save csv file
     """
@@ -118,4 +118,4 @@ def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
         '-preset', 'slow'] + crfv + audio + ['-movflags', '+faststart']
 
     # run loop
-    iterate_ffmpeg(source, output, header, trim, ffmpeg_run_mp4, params)
+    iterate_ffmpeg(source, output, header, trim, _ffmpeg_run_mp4, params)

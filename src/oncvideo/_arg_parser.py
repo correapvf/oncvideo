@@ -1,8 +1,7 @@
 """Functions to allow to run commands in the terminal"""
-import os
 import argparse
 from pathlib import Path
-from onc.onc import ONC
+from .onc import onc
 from .list_files import list_file, list_file_batch
 from .dives_onc import get_dives
 from .video_info import video_info
@@ -11,30 +10,6 @@ from .extract_frame import extract_frame, extract_fov
 from .download_files import download_files, to_mp4
 from .ts_download import download_ts, merge_ts
 from .seatube import st_download, st_link, st_rename
-
-
-def onc(token = None):
-    """
-    Create an ONC class object
-    
-    Create an ONC class object, but try to use environment variables to get the API token.
-    The token must stored under 'ONC_API_TOKEN'.
-
-    Parameters
-    ----------
-    token : str
-        ONC API token
-
-    Returns
-    -------
-    onc.ONC
-        ONC class object
-    """
-    token = token if token else os.getenv('ONC_API_TOKEN')
-    if token is None:
-        raise ValueError("No API credentials were provided!")
-    return ONC(token)
-
 
 # Default functions used by each subcommand
 def flist(args):

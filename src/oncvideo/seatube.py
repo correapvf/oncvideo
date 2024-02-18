@@ -88,7 +88,7 @@ def st_download(onc, url, ext='mov', ext_frame=False):
         print("Frame extracted at ", strftd2(ss))
 
 
-def generate_link(timediff, idd, ts):
+def _generate_link(timediff, idd, ts):
     """
     Generate link to Seatube V3
     """
@@ -159,7 +159,7 @@ def st_link(onc, source):
         df = pd.merge_asof(df, dives, left_on='timestamp', right_on='startDate')
         df['timediff'] = (df['endDate'] - df['timestamp']).dt.total_seconds() > 0
 
-        df['url'] = df.apply(lambda x: generate_link(x.timediff, x.id, x.timestamp), axis=1)
+        df['url'] = df.apply(lambda x: _generate_link(x.timediff, x.id, x.timestamp), axis=1)
         df.drop(columns=['deviceCode','id','startDate','endDate','timediff'], inplace=True)
 
     else:
