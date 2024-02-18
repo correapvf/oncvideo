@@ -1,3 +1,8 @@
 Sphinx>=7.2.6
 sphinxcontrib-napoleon>=0.7
--e .
+pandas
+requests
+tqdm
+onc
+backoff
+ffmpeg_progress_yield
