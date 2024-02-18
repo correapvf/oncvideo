@@ -27,7 +27,7 @@ FFmpeg must be installed and accessible via the `$PATH` environment variable.
 
 ## Docs
 
-Documentation for functions in the package is avaiable at http://correapvf.github.io/oncvideo.
+Documentation for functions in the package is avaiable at https://correapvf.github.io/oncvideo.
 After installation, use `oncvideo -h` to get help and a list of available commands avaiable as well.
 
 See also [tests](tests) folder for exemples of *.csv* files that can be used with the *blist*/*list_file_batch* command/function.
