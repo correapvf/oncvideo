@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install requirements
       run: |
-        pip3 install sphinx-rtd-theme, oncvideo
+        pip3 install sphinx-rtd-theme oncvideo
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
     - name: Upload artifacts
