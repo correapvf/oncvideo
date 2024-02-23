@@ -167,7 +167,7 @@ def trim_group(group):
     return group
 
 
-def parse_file_path(source, check=True):
+def parse_file_path(source, output=None, check=True):
     """
     Return a pandas.DataFrame according to the source
     """
@@ -185,6 +185,9 @@ def parse_file_path(source, check=True):
             df = pd.read_csv(path)
             if not 'filename' in df.columns and check:
                 raise ValueError("Input csv must have column 'filename'")
+            file_out = Path(output + '.csv')
+            if source == file_out.name:
+                raise ValueError("Output folder must be a different name than input csv.")
             df['urlfile'] = URL + df['filename']
             need_download = True
         else:

@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from oncvideo.arg_parser import main as parser
+from oncvideo._arg_parser import main as parser
 
 class TestListDc():
     def setup_class(self):

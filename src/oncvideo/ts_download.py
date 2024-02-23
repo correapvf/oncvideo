@@ -156,7 +156,7 @@ def download_ts(onc, source, category_code, output='output',
         The dataFrame generated from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source)
+    df, _, _ = parse_file_path(source, output)
 
     tol = kwargs.get('tolerance', 15)
     units = kwargs.get('units', True)
@@ -170,11 +170,8 @@ def download_ts(onc, source, category_code, output='output',
     out_path = onc.outPath
     onc.outPath = output
 
-    file_out = output / Path(output + '.csv')
-    if source == file_out.name:
-        raise ValueError("Output folder must be a different name than input csv.")
-
     # check if command has been started alread
+    file_out = output / Path(output + '.csv')
     if file_out.exists():
         fo = pd.read_csv(file_out)
         f = open(file_out, "a", encoding="utf-8")
@@ -291,7 +288,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         The dataFrame from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source, False)
+    df, _, _ = parse_file_path(source, None, False)
     df.drop(columns='urlfile', inplace=True)
     ts_bk = None
 

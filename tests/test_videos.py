@@ -2,7 +2,7 @@ from pathlib import Path
 import shutil
 import pytest
 import pandas as pd
-from oncvideo.arg_parser import main as parser
+from oncvideo._arg_parser import main as parser
 
 class TestDownload():
     def setup_class(self):

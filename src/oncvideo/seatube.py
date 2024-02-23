@@ -123,13 +123,8 @@ def st_link(onc, source):
         The dataFrame from source, with new column `url` with corresponding
         Seatube links.
     """
-    if '*' in source or source.endswith('.csv'):
-        df, _, _ = parse_file_path(source)
-        df.drop(columns='urlfile', inplace=True)
-    else:
-        if not '.' in source:
-            raise ValueError("Source must be a valid name with extension.")
-        df = pd.DataFrame({'filename': [source]}, index=[0])
+    df, _, _ = parse_file_path(source)
+    df.drop(columns='urlfile', inplace=True)
     ts_bk = None
 
     index = df['filename'].str.count('\\.') == 1
@@ -145,10 +140,10 @@ def st_link(onc, source):
         else:
             df.rename(columns={'ts': 'timestamp'}, inplace=True)
 
-    df.sort_values(['dc', 'filename'], inplace=True)
+    df.sort_values('timestamp', inplace=True)
 
     dives = get_dives(onc)
-    dives = dives[['deviceCode','id','startDate','endDate']]
+    dives = dives[['deviceCode','id','dive','startDate','endDate']]
     dives = dives[dives['deviceCode'].isin(df['dc'].unique())]
 
     if dives.shape[0] > 0:

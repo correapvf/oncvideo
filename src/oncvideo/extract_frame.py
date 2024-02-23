@@ -155,7 +155,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
     header = f"video_filename,{','.join(fovfolder)}\n"
 
-    df, folder, f = iterate_init(source, output, header, df, has_group)
+    df, folder, f = iterate_init(output, header, df, has_group)
 
     if deinterlace:
         vf_cmd = ['-vf', 'pp=ci|a']

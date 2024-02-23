@@ -6,14 +6,10 @@ from tqdm import tqdm
 from ._utils import download_file, trim_group, parse_file_path
 
 
-def iterate_init(source, output, header, df, has_group):
+def iterate_init(output, header, df, has_group):
     """
     Helper function for iterate_ffmpeg
     """
-    file_out = Path(output + '.csv')
-    if source == file_out.name:
-        raise ValueError("Output folder must be a different name than input csv.")
-
     if has_group:
         header = 'subfolder,' + header
         df.sort_values(['group','filename'], inplace=True)
@@ -25,6 +21,7 @@ def iterate_init(source, output, header, df, has_group):
     folder.mkdir(exist_ok=True)
 
     # check if command has been started alread
+    file_out = Path(output + '.csv')
     if file_out.exists():
         tmp = pd.read_csv(file_out)
         count = df.shape[0]
@@ -44,9 +41,9 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params, missing_ok=
     """
     Loop in the DataFrame and execute the ffmpeg command
     """
-    df, has_group, need_download = parse_file_path(source)
+    df, has_group, need_download = parse_file_path(source, output)
 
-    df, folder, f = iterate_init(source, output, header, df, has_group)
+    df, folder, f = iterate_init(output, header, df, has_group)
 
     pbar = tqdm(total=df.shape[0], desc = 'Processed files')
 

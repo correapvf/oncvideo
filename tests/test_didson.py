@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 import pandas as pd
-from oncvideo.arg_parser import main as parser
+from oncvideo._arg_parser import main as parser
 from oncvideo._utils import URL, download_file
 from oncvideo.didson_file import read_ddf
 
