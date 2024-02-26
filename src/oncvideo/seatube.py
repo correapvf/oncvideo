@@ -123,7 +123,7 @@ def st_link(onc, source):
         The dataFrame from source, with new column `url` with corresponding
         Seatube links.
     """
-    df, _, _ = parse_file_path(source)
+    df, _, _ = parse_file_path(source, check2=False)
     df.drop(columns='urlfile', inplace=True)
     ts_bk = None
 

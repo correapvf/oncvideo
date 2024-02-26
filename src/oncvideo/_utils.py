@@ -167,9 +167,11 @@ def trim_group(group):
     return group
 
 
-def parse_file_path(source, output=None, check=True):
+def parse_file_path(source, output=None, check=True, check2=True):
     """
     Return a pandas.DataFrame according to the source
+    check - dataFrame or csv does not need to have filename column
+    check2 - file does not need to exist
     """
     if isinstance(source, pd.DataFrame):
         if not 'filename' in source.columns and check:
@@ -194,14 +196,18 @@ def parse_file_path(source, output=None, check=True):
             df = pd.DataFrame({'filename': [path.name], 'urlfile': [str(path)]})
             need_download = False
     else:
-        if '*' not in source:
-            raise ValueError("Source must be a filename or a glob (use *).")
+        if '*' in source:
+            directory = path.parent
+            p = list(directory.rglob(path.name))
 
-        directory = path.parent
-        p = list(directory.rglob(path.name))
+            if len(p) == 0:
+                raise ValueError("No files found matching file pattern.")
 
-        if len(p) == 0:
-            raise ValueError("No files found matching file pattern.")
+        else:
+            if check2:
+                raise ValueError("Source must be a filename or a glob (use *).")
+
+            p = [path]
 
         df = pd.DataFrame({'filename': p})
         df['urlfile'] = df['filename'].apply(str)

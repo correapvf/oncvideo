@@ -156,7 +156,7 @@ def download_ts(onc, source, category_code, output='output',
         The dataFrame generated from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source, output)
+    df, _, _ = parse_file_path(source, output, check2=False)
 
     tol = kwargs.get('tolerance', 15)
     units = kwargs.get('units', True)
@@ -288,7 +288,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         The dataFrame from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source, None, False)
+    df, _, _ = parse_file_path(source, None, False, False)
     df.drop(columns='urlfile', inplace=True)
     ts_bk = None
 
