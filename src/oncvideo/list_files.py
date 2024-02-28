@@ -138,14 +138,14 @@ def _list_file_helper(df, statistics, extension, quality, cols_to_keep):
         # last file
         r2 = name_to_timestamp(group['filename'].iloc[-1])
         r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format=timef)
-        timediff = r2 - r02
+        timediff = r02 - r2
         nseconds = timediff.total_seconds()
-        if nseconds > 0:
+        if 0 < nseconds < 1800: # 30 min * 60
             query = f'end at {strftd(abs(nseconds))}'
-        elif nseconds < 0:
-            query = f'gap dateTo of {timediff * -1}'
+        elif nseconds <= 0:
+            query = f'querry dateTo is before by {timediff * -1}'
         else:
-            query = ''
+            query = f'gap dateTo of {timediff}'
         query0 = df.loc[group.index[-1],'query_offset']
         if query0 == '':
             df.loc[group.index[-1],'query_offset'] = query
