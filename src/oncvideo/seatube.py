@@ -139,7 +139,7 @@ def link_st(onc, source):
 
     elif 'filename' in df:
         cleanup = True
-        df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+        df = pd.concat([df, name_to_timestamp_dc(df['video_filename'])], axis=1, ignore_index=True)
 
     else:
         raise ValueError("Columns 'filename' or ('timestamp' and 'deviceCode') must be provided.")

@@ -29,7 +29,7 @@ def _download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
     """
     # get timestamp and deviceCode from filename
     df = df[['filename']].copy()
-    df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+    df = pd.concat([df, name_to_timestamp_dc(df['video_filename'])], axis=1, ignore_index=True)
     df.sort_values(['deviceCode', 'timestamp'], inplace=True)
 
     # group if gap between timestamps is bigger than one day
@@ -306,7 +306,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
             cleanup = ['deviceCode']
 
     elif 'filename' in df:
-        df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+        df = pd.concat([df, name_to_timestamp_dc(df['video_filename'])], axis=1, ignore_index=True)
         cleanup = ['timestamp', 'deviceCode']
 
     else:

@@ -58,7 +58,7 @@ def name_to_timestamp(filename):
     return r1
 
 
-def name_to_timestamp_dc(filenames, output_columns=None):
+def name_to_timestamp_dc(filenames):
     """
     Get timestamps and deviceCode from filenames
 
@@ -69,23 +69,15 @@ def name_to_timestamp_dc(filenames, output_columns=None):
     ----------
     filenames : pandas.Series
         A str series with filenames that follow the ONC convention (deviceCode_timestampUTC.ext).
-    output_columns : list of str
-        A list of length 2 with the name of the exported columns. Default to ['timestamp', 'dc'].
 
     Returns
     -------
     pandas.DataFrame
         A DataFrame with timestamps and deviceCodes
     """
-    if output_columns is None:
-        output_columns = ['timestamp', 'dc']
-    else:
-        if len(output_columns) != 2:
-            raise ValueError("'output_columns' must be a list of length 2.")
-
     def _name_to_timestamp_dc_helper(filename):
         x = name_to_timestamp(filename)
         return x, x.dc
 
     tmp = filenames.apply(_name_to_timestamp_dc_helper).to_list()
-    return pd.DataFrame(tmp, columns=output_columns)
+    return pd.DataFrame(tmp, columns=['timestamp', 'deviceCode'])
