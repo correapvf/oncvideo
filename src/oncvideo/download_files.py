@@ -1,5 +1,6 @@
 """Module providing functions to download and convert video."""
-from ._utils import run_ffmpeg, name_to_timestamp
+from ._utils import run_ffmpeg
+from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg
 
 

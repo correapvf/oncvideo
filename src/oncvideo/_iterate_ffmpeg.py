@@ -21,7 +21,8 @@ def iterate_init(output, header, df, has_group):
     folder.mkdir(exist_ok=True)
 
     # check if command has been started alread
-    file_out = Path(output + '.csv')
+    output_pathlib = Path(output)
+    file_out = output_pathlib / (output_pathlib.name + '.csv')
     if file_out.exists():
         tmp = pd.read_csv(file_out)
         count = df.shape[0]
@@ -41,7 +42,7 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params, missing_ok=
     """
     Loop in the DataFrame and execute the ffmpeg command
     """
-    df, has_group, need_download = parse_file_path(source, output)
+    df, has_group, need_download = parse_file_path(source)
 
     df, folder, f = iterate_init(output, header, df, has_group)
 

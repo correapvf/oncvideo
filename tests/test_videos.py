@@ -13,7 +13,7 @@ class TestDownload():
                 "-o",
                 "videos_trim"
               ])
-        self.df = pd.read_csv("videos_trim.csv")
+        self.df = pd.read_csv("videos_trim/videos_trim.csv")
 
     def test_shape(self):
         assert self.df.shape == (4, 4)
@@ -33,7 +33,6 @@ class TestDownload():
         assert len(list(p)) == 1
 
     def teardown_class(self):
-        Path("videos_trim.csv").unlink()
         shutil.rmtree("videos_trim")
 
 
@@ -61,7 +60,7 @@ class TestTomp4():
               ])
 
     def test_csv(self):
-        df = pd.read_csv("output.csv")
+        df = pd.read_csv("output/output.csv")
         assert df.shape == (1, 3)
 
     def test_file(self):
@@ -69,7 +68,6 @@ class TestTomp4():
         assert len(list(p)) == 1
 
     def teardown_class(self):
-        Path("output.csv").unlink()
         shutil.rmtree("output")
 
 
@@ -100,7 +98,7 @@ class TestExtractFrame():
               ])
 
     def test_csv(self):
-        df = pd.read_csv("frames.csv")
+        df = pd.read_csv("frames/frames.csv")
         assert df.shape == (124, 4)
 
     def test_files1(self):
@@ -112,7 +110,6 @@ class TestExtractFrame():
         assert len(list(p)) == 31
 
     def teardown_class(self):
-        Path("frames.csv").unlink()
         shutil.rmtree("frames")
 
 
@@ -126,7 +123,7 @@ class TestExtractFov():
               ])
 
     def test_csv(self):
-        df = pd.read_csv("fovs.csv")
+        df = pd.read_csv("fovs/fovs.csv")
         assert df.shape == (3, 3)
 
     def test_files1(self):
@@ -138,5 +135,4 @@ class TestExtractFov():
         assert len(list(p)) == 3
 
     def teardown_class(self):
-        Path("fovs.csv").unlink()
         shutil.rmtree("fovs")

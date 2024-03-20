@@ -1,6 +1,7 @@
 """List archived files from ONC"""
 import pandas as pd
-from ._utils import sizeof_fmt, strftd, name_to_timestamp
+from ._utils import sizeof_fmt, strftd
+from .utils import name_to_timestamp
 from .dives_onc import get_dives
 
 def _ask_options(results, ivalue, ihelp):
@@ -121,36 +122,38 @@ def _list_file_helper(df, statistics, extension, quality, cols_to_keep):
     timef = '%Y-%m-%dT%H:%M:%S.%fZ'
 
     for _, group in df.groupby(cols_sort):
-
-        # first file
-        r1 = name_to_timestamp(group['filename'].iloc[0])
-        r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format=timef)
-        timediff = r01 - r1
-        nseconds = timediff.total_seconds()
-        if nseconds > 0:
-            query = f'start at {strftd(abs(nseconds))}'
-        elif nseconds < 0:
-            query = f'gap dateFrom of {timediff * -1}'
-        else:
-            query = ''
-        df.loc[group.index[0],'query_offset'] = query
         
-        # last file
-        r2 = name_to_timestamp(group['filename'].iloc[-1])
-        r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format=timef)
-        timediff = r02 - r2
-        nseconds = timediff.total_seconds()
-        if 0 < nseconds < 1800: # 30 min * 60
-            query = f'end at {strftd(abs(nseconds))}'
-        elif nseconds <= 0:
-            query = f'querry dateTo is before by {timediff * -1}'
-        else:
-            query = f'gap dateTo of {timediff}'
-        query0 = df.loc[group.index[-1],'query_offset']
-        if query0 == '':
-            df.loc[group.index[-1],'query_offset'] = query
-        else:
-            df.loc[group.index[-1],'query_offset'] = f"{query0}/{query}"
+        if group['dateFromQuery'].iloc[0] is not None:
+            # first file
+            r1 = name_to_timestamp(group['filename'].iloc[0])
+            r01 = pd.to_datetime(group['dateFromQuery'].iloc[0], utc=True, format=timef)
+            timediff = r01 - r1
+            nseconds = timediff.total_seconds()
+            if nseconds > 0:
+                query = f'start at {strftd(abs(nseconds))}'
+            elif nseconds < 0:
+                query = f'gap dateFrom of {timediff * -1}'
+            else:
+                query = ''
+            df.loc[group.index[0],'query_offset'] = query
+        
+        if group['dateToQuery'].iloc[-1] is not None:
+            # last file
+            r2 = name_to_timestamp(group['filename'].iloc[-1])
+            r02 = pd.to_datetime(group['dateToQuery'].iloc[-1], utc=True, format=timef)
+            timediff = r02 - r2
+            nseconds = timediff.total_seconds()
+            if 0 < nseconds < 1800: # 30 min * 60
+                query = f'end at {strftd(abs(nseconds))}'
+            elif nseconds <= 0:
+                query = f'querry dateTo is before by {timediff * -1}'
+            else:
+                query = f'gap dateTo of {timediff}'
+            query0 = df.loc[group.index[-1],'query_offset']
+            if query0 == '':
+                df.loc[group.index[-1],'query_offset'] = query
+            else:
+                df.loc[group.index[-1],'query_offset'] = f"{query0}/{query}"
 
     if cols_to_keep is not None:
         cols_new += cols_to_keep

@@ -1,7 +1,7 @@
 """Functions to allow to run commands in the terminal"""
 import argparse
 from pathlib import Path
-from .onc import onc
+from .utils import onc
 from .list_files import list_file, list_file_batch
 from .dives_onc import get_dives
 from .video_info import video_info
@@ -9,7 +9,7 @@ from .didson_file import didson_info
 from .extract_frame import extract_frame, extract_fov
 from .download_files import download_files, to_mp4
 from .ts_download import download_ts, merge_ts
-from .seatube import st_download, st_link, st_rename
+from .seatube import download_st, link_st, rename_st
 
 # Default functions used by each subcommand
 def flist(args):
@@ -110,19 +110,19 @@ def fmergets(args):
 
 def fdownloadst(args):
     """
-    run st_download function
+    run download_st function
     """
     onc_ob = onc(args.token)
-    st_download(onc_ob, args.url, args.extension, args.ext_frame)
+    download_st(onc_ob, args.url, args.extension, args.ext_frame)
 
 
 def flinkst(args):
     """
-    run st_link function
+    run link_st function
     """
     onc_ob = onc(args.token)
 
-    df = st_link(onc_ob, args.source)
+    df = link_st(onc_ob, args.source)
 
     if df.shape[0] == 1:
         print(df['url'].iloc[0])
@@ -132,12 +132,12 @@ def flinkst(args):
 
 def frenamest(args):
     """
-    run st_rename function on multiple files
+    run rename_st function on multiple files
     """
     path = Path(args.path)
     directory = path.parent
     for f in directory.rglob(path.name):
-        newname = st_rename(f.name)
+        newname = rename_st(f.name)
         f.rename(newname)
 
 

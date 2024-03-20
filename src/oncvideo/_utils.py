@@ -6,6 +6,7 @@ import pandas as pd
 import backoff
 from tqdm import tqdm
 from ffmpeg_progress_yield import FfmpegProgress
+from .utils import name_to_timestamp
 
 URL = "https://data.oceannetworks.ca/AdFile?filename="
 
@@ -83,37 +84,6 @@ def run_ffmpeg(cmd, filename=''):
             pbar.update(progress - pbar.n)
 
 
-def name_to_timestamp(filename):
-    """
-    Return a pandas.Timestamp object from a filename
-    that follows the ONC convention
-    """
-    r0_split = filename.split('_')
-    r1_split = r0_split[-1].split('.')
-
-    if '-' in r1_split[1]:
-        r1_split[1], bitrate = r1_split[1].split('-')
-        ext = f"-{bitrate}.{r1_split[2]}"
-    else:
-        ext = f".{r1_split[2]}"
-
-    r1 = f'{r1_split[0]}.{r1_split[1]}'
-    r1 = pd.to_datetime(r1, format='%Y%m%dT%H%M%S.%fZ', utc=True)
-    r1.dc = '_'.join(r0_split[:-1])
-    r1.ext = ext
-
-    return r1
-
-
-def name_to_timestamp_dc(filename):
-    """
-    Wrapper for name_to_timestamp to return deviceCode and
-    timestamp as separate variables
-    """
-    x = name_to_timestamp(filename)
-    return x, x.dc
-
-
 def to_timedelta(x):
     """
     Convert number of seconds to pandas.Timedelta object
@@ -167,17 +137,20 @@ def trim_group(group):
     return group
 
 
-def parse_file_path(source, output=None, check=True, check2=True):
+def parse_file_path(source, need_filename=True):
     """
     Return a pandas.DataFrame according to the source
-    check - dataFrame or csv does not need to have filename column
-    check2 - file does not need to exist
+    need_filename - check if dataFrame or csv have a filename column
     """
     if isinstance(source, pd.DataFrame):
-        if not 'filename' in source.columns and check:
-            raise ValueError("Input csv must have column 'filename'")
+        if need_filename:
+            if not 'filename' in source.columns:
+                raise ValueError("Input csv must have column 'filename'")
+            source['urlfile'] = URL + source['filename']
+        else:
+            source['urlfile'] = ''
+
         has_group = 'group' in source.columns
-        source['urlfile'] = URL + source['filename']
         return source, has_group, True
 
     path = Path(source)
@@ -185,39 +158,38 @@ def parse_file_path(source, output=None, check=True, check2=True):
     if path.is_file():
         if path.suffix == '.csv':
             df = pd.read_csv(path)
-            if not 'filename' in df.columns and check:
-                raise ValueError("Input csv must have column 'filename'")
-            file_out = Path(output + '.csv')
-            if source == file_out.name:
-                raise ValueError("Output folder must be a different name than input csv.")
-            df['urlfile'] = URL + df['filename']
+            if need_filename:
+                if not 'filename' in df.columns:
+                    raise ValueError("Input csv must have column 'filename'")
+                df['urlfile'] = URL + df['filename']
+            else:
+                df['urlfile'] = ''
             need_download = True
         else:
             df = pd.DataFrame({'filename': [path.name], 'urlfile': [str(path)]})
             need_download = False
     else:
         if '*' in source:
+            #
             directory = path.parent
             p = list(directory.rglob(path.name))
 
             if len(p) == 0:
                 raise ValueError("No files found matching file pattern.")
 
+            df = pd.DataFrame({'filename': p})
+            df['urlfile'] = df['filename'].apply(str)
+            df['group'] = df['filename'].apply(lambda x: str(x.relative_to(path.parent).parent))
+            df['filename'] = df['filename'].apply(lambda x: x.name)
+
+            if len(df['group'].value_counts()) == 1:
+                df.drop(columns='group', inplace=True)
+
+            need_download = False
+
         else:
-            if check2:
-                raise ValueError("Source must be a filename or a glob (use *).")
-
-            p = [path]
-
-        df = pd.DataFrame({'filename': p})
-        df['urlfile'] = df['filename'].apply(str)
-        df['group'] = df['filename'].apply(lambda x: str(x.relative_to(path.parent).parent))
-        df['filename'] = df['filename'].apply(lambda x: x.name)
-
-        if len(df['group'].value_counts()) == 1:
-            df.drop(columns='group', inplace=True)
-
-        need_download = False
+            df = pd.DataFrame({'filename': [path.name], 'urlfile': [URL + path.name]})
+            need_download = True
 
     has_group = 'group' in df.columns
     return df, has_group, need_download

@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 from tqdm import tqdm
 import pandas as pd
-from ._utils import name_to_timestamp, download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
+from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
+from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
 
 def _ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video_name):

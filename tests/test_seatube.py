@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from oncvideo._arg_parser import main as parser
-from oncvideo.seatube import st_rename
+from oncvideo.seatube import rename_st
 
 class TestDownloadSeatube():
     def setup_class(self):
@@ -50,13 +50,13 @@ class TestLink():
 
 class TestRename():
     def test_rename1(self):
-        newname = st_rename('DEVICECODE_20230913T200203.000Z-003.jpeg')
+        newname = rename_st('DEVICECODE_20230913T200203.000Z-003.jpeg')
         assert newname == 'DEVICECODE_20230913T200201.000Z.jpeg'
 
     def test_rename2(self):
-        newname = st_rename('INSPACMINIZEUS4KCAMODYSSEUS_20220728T175017.000Z-009.jpg')
+        newname = rename_st('INSPACMINIZEUS4KCAMODYSSEUS_20220728T175017.000Z-009.jpg')
         assert newname == 'INSPACMINIZEUS4KCAMODYSSEUS_20220728T175021.000Z.jpg'
     
     def test_invalid(self):
-        newname = st_rename('DEVICECODE_20220728T175017.000Z-5000.jpeg')
+        newname = rename_st('DEVICECODE_20220728T175017.000Z-5000.jpeg')
         assert newname == 'DEVICECODE_20220728T175017.000Z-5000.jpeg'

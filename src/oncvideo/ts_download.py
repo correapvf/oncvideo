@@ -6,7 +6,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import pandas as pd
-from ._utils import name_to_timestamp_dc, parse_file_path
+from ._utils import parse_file_path
+from .utils import name_to_timestamp_dc
 
 
 class _HiddenPrints:
@@ -28,11 +29,11 @@ def _download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
     """
     # get timestamp and deviceCode from filename
     df = df[['filename']].copy()
-    df[['timestamp', 'dc']] = df['filename'].apply(name_to_timestamp_dc).to_list()
-    df.sort_values(['dc', 'filename'], inplace=True)
+    df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+    df.sort_values(['deviceCode', 'timestamp'], inplace=True)
 
     # group if gap between timestamps is bigger than one day
-    df['gap'] = (df.groupby('dc')['timestamp'].diff() > pd.Timedelta(1, "d")).cumsum()
+    df['gap'] = (df.groupby('deviceCode')['timestamp'].diff() > pd.Timedelta(1, "d")).cumsum()
 
     # start for loop
     nloop = 0
@@ -40,7 +41,7 @@ def _download_ts_helper(df, onc, category_code, clean, f, fo, nworkers):
 
     with ThreadPoolExecutor(max_workers=nworkers) as executor:
 
-        for name, group in df.groupby(['dc', 'gap']):
+        for name, group in df.groupby(['deviceCode', 'gap']):
 
             date_from = group['timestamp'].iloc[0] - pd.Timedelta(10, "min")
             date_from = date_from.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
@@ -156,7 +157,7 @@ def download_ts(onc, source, category_code, output='output',
         The dataFrame generated from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source, output, check2=False)
+    df, _, _ = parse_file_path(source)
 
     tol = kwargs.get('tolerance', 15)
     units = kwargs.get('units', True)
@@ -171,7 +172,8 @@ def download_ts(onc, source, category_code, output='output',
     onc.outPath = output
 
     # check if command has been started alread
-    file_out = output / Path(output + '.csv')
+    output_pathlib = Path(output)
+    file_out = output_pathlib / (output_pathlib.name + '.csv')
     if file_out.exists():
         fo = pd.read_csv(file_out)
         f = open(file_out, "a", encoding="utf-8")
@@ -272,7 +274,9 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
     ----------
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *)
+        match multiple files (use *). If a DataFrame or a .csv file,
+        must have a column 'filename' that follow the ONC convention
+        or columns 'timestamp' and 'deviceCode'.
     ts_data : str
         Folder containg csv files downloaded from Oceans 3
     tolerance : float
@@ -288,26 +292,25 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         The dataFrame from source, with variables within ts_data
         merged based on the timestamps
     """
-    df, _, _ = parse_file_path(source, None, False, False)
+    df, _, _ = parse_file_path(source, need_filename = False)
     df.drop(columns='urlfile', inplace=True)
-    ts_bk = None
 
-    if 'filename' in df:
-        df[['ts', 'dc']] = df['filename'].apply(name_to_timestamp_dc).to_list()
+    cleanup = None
+    if 'timestamp' in df:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
 
-        if 'timestamp' in df:
-            ts_bk = df['timestamp']
-            df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-            df.drop(columns='ts', inplace=True)
-        else:
-            df.rename(columns={'ts': 'timestamp'}, inplace=True)
+        if 'deviceCode' not in df:
+            print("only 'timestamp' column was provided. Assuming timestamps and data"
+                "in 'ts_data' are not from multiple devices at the same time")
+            df['deviceCode'] = "tmp"
+            cleanup = ['deviceCode']
+
+    elif 'filename' in df:
+        df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+        cleanup = ['timestamp', 'deviceCode']
 
     else:
-        if 'timestamp' not in df:
-            raise ValueError("Columns 'filename' or 'timestamp' must be provided")
-        print("only 'timestamp' column was provided. Assuming timestamps and data"
-            "in 'ts_data' are associated with a single device")
-        df['dc'] = "tmp"
+        raise ValueError("Columns 'filename' or ('timestamp' and 'deviceCode') must be provided")
 
     ts_folder = Path(ts_data)
     ts_folder_csv = ts_folder / (ts_data + '.csv')
@@ -321,12 +324,12 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         d = ts_folder.glob("*.jpg")
         ts_data = pd.DataFrame({'deviceCode': 'tmp', 'downloaded': list(d)})
 
-    df.sort_values(['dc', 'timestamp'], inplace=True)
+    df.sort_values(['deviceCode', 'timestamp'], inplace=True)
 
     df_out = []
-    for dc in df['dc'].unique():
+    for dc in df['deviceCode'].unique():
         ts_data_dc = ts_data[ts_data['deviceCode'] == dc]
-        tmp = df[df['dc'] == dc]
+        tmp = df[df['deviceCode'] == dc]
 
         for _, row in ts_data_dc.iterrows():
             data = read_ts(ts_folder / row['downloaded'], units)
@@ -336,10 +339,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
 
     df_out = pd.concat(df_out)
 
-    if ts_bk is None:
-        df_out.drop(columns=['timestamp', 'dc'], inplace=True)
-    else:
-        df_out['timestamp'] = ts_bk
-        df_out.drop(columns='dc', inplace=True)
+    if cleanup is not None:
+        df_out.drop(columns=cleanup, inplace=True)
 
     return df_out

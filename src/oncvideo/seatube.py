@@ -4,11 +4,11 @@ from urllib.parse import urlparse, parse_qs
 import json
 import requests
 import pandas as pd
-from ._utils import name_to_timestamp, name_to_timestamp_dc, parse_file_path
-from ._utils import run_ffmpeg, download_file, URL, strftd2
+from .utils import name_to_timestamp, name_to_timestamp_dc
+from ._utils import run_ffmpeg, download_file, parse_file_path, URL, strftd2
 from .dives_onc import get_dives
 
-def st_download(onc, url, ext='mov', ext_frame=False):
+def download_st(onc, url, ext='mov', ext_frame=False):
     """
     Download video from Seatube
 
@@ -100,7 +100,7 @@ def _generate_link(timediff, idd, ts):
         return ''
 
 
-def st_link(onc, source):
+def link_st(onc, source):
     """
     Generate Seatube link
 
@@ -115,7 +115,8 @@ def st_link(onc, source):
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
         match multiple files (use *). If a DataFrame or a .csv file,
-        it must have a column 'filename' and, optionally, 'timestamp'.
+        it must have a column 'filename' that follow the ONC convention
+        or columns 'timestamp' and 'deviceCode'.
 
     Returns
     -------
@@ -123,28 +124,31 @@ def st_link(onc, source):
         The dataFrame from source, with new column `url` with corresponding
         Seatube links.
     """
-    df, _, _ = parse_file_path(source, check2=False)
+    df, _, _ = parse_file_path(source)
     df.drop(columns='urlfile', inplace=True)
-    ts_bk = None
 
     index = df['filename'].str.count('\\.') == 1
     df.loc[index, 'filename'] = df['filename'].str.replace('.', '.000Z.', regex=False)
 
-    if 'filename' in df:
-        df[['ts', 'dc']] = df['filename'].apply(name_to_timestamp_dc).to_list()
+    if 'timestamp' in df and 'deviceCode' in df:
+        cleanup = False
+        df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+    
+    elif 'timestamp' in df or 'deviceCode' in df:
+        raise ValueError("Both columns 'timestamp' and 'deviceCode' must be provided.")
 
-        if 'timestamp' in df:
-            ts_bk = df['timestamp']
-            df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-            df.drop(columns='ts', inplace=True)
-        else:
-            df.rename(columns={'ts': 'timestamp'}, inplace=True)
+    elif 'filename' in df:
+        cleanup = True
+        df[['timestamp', 'deviceCode']] = name_to_timestamp_dc(df['filename'])
+
+    else:
+        raise ValueError("Columns 'filename' or ('timestamp' and 'deviceCode') must be provided.")
 
     df.sort_values('timestamp', inplace=True)
 
     dives = get_dives(onc)
-    dives = dives[['deviceCode','id','dive','startDate','endDate']]
-    dives = dives[dives['deviceCode'].isin(df['dc'].unique())]
+    dives = dives[dives['deviceCode'].isin(df['deviceCode'].unique())]
+    dives = dives[['id','startDate','endDate']] # 'dive'
 
     if dives.shape[0] > 0:
         dives['startDate'] = pd.to_datetime(dives['startDate'], utc=True)
@@ -155,21 +159,18 @@ def st_link(onc, source):
         df['timediff'] = (df['endDate'] - df['timestamp']).dt.total_seconds() > 0
 
         df['url'] = df.apply(lambda x: _generate_link(x.timediff, x.id, x.timestamp), axis=1)
-        df.drop(columns=['deviceCode','id','startDate','endDate','timediff'], inplace=True)
+        df.drop(columns=['id','startDate','endDate','timediff'], inplace=True)
 
     else:
         df['url'] = ''
 
-    if ts_bk is None:
-        df.drop(columns=['timestamp', 'dc'], inplace=True)
-    else:
-        df['timestamp'] = ts_bk
-        df.drop(columns='dc', inplace=True)
+    if cleanup:
+        df.drop(columns=['timestamp','deviceCode'], inplace=True)
 
     return df
 
 
-def st_rename(filename):
+def rename_st(filename):
     """
     Rename framegrabs from Seatube to correct timestamp
 

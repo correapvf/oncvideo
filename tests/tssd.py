@@ -1,4 +1,4 @@
-from oncvideo.arg_parser import main as parser
+from oncvideo._arg_parser import main as parser
 parser([
         "downloadTS",
         "tests/videos_test.csv",
