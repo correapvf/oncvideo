@@ -124,7 +124,7 @@ def link_st(onc, source):
         The dataFrame from source, with new column `url` with corresponding
         Seatube links.
     """
-    df, _, _ = parse_file_path(source)
+    df, _, _ = parse_file_path(source, need_filename=False)
     df.drop(columns='urlfile', inplace=True)
 
     index = df['filename'].str.count('\\.') == 1
@@ -133,13 +133,13 @@ def link_st(onc, source):
     if 'timestamp' in df and 'deviceCode' in df:
         cleanup = False
         df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-    
+
     elif 'timestamp' in df or 'deviceCode' in df:
         raise ValueError("Both columns 'timestamp' and 'deviceCode' must be provided.")
 
     elif 'filename' in df:
         cleanup = True
-        df = pd.concat([df, name_to_timestamp_dc(df['filename'])], axis=1, ignore_index=True)
+        df = pd.concat([df, name_to_timestamp_dc(df['filename'])], axis=1)
 
     else:
         raise ValueError("Columns 'filename' or ('timestamp' and 'deviceCode') must be provided.")

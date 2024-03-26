@@ -32,9 +32,19 @@ class TestDives():
 
 class TestDownloadTssd():
     def setup_class(self):
-        # need to use exec in this case, or the test will fail for some unkown reason
-        exec(open('tests/tssd.py').read())
-        self.df = pd.read_csv("output_merged.csv")
+        parser([
+        "downloadTS",
+        "tests/videos_test.csv",
+        "NAV,CTD",
+        "-t",
+        "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+        ])
+        parser([
+                "mergeTS",
+                "tests/videos_test.csv",
+                "output",
+              ])
+        self.df = pd.read_csv("merged.csv")
 
     def test_shape(self):
         df = pd.read_csv("output/output.csv")
@@ -58,5 +68,5 @@ class TestDownloadTssd():
         assert p.is_file()
 
     def teardown_class(self):
-        Path("output_merged.csv").unlink()
+        Path("merged.csv").unlink()
         shutil.rmtree("output")

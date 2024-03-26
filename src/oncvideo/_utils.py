@@ -1,4 +1,5 @@
 """ Multiple helper functions used for the package"""
+from collections import defaultdict
 from pathlib import Path
 import requests
 import numpy as np
@@ -193,3 +194,48 @@ def parse_file_path(source, need_filename=True):
 
     has_group = 'group' in df.columns
     return df, has_group, need_download
+
+
+def make_names(names):
+    """
+    Make sure names are unique
+    """
+    # Create a dictionary to store counts of each name
+    name_counts = defaultdict(int)
+    unique_names = []
+
+    # Iterate over the cleaned names
+    for name in names:
+        # If the name already exists, append a sequential number
+        if name in name_counts:
+            name_counts[name] += 1
+            unique_names.append(f"{name}_{name_counts[name]}")
+        else:
+            name_counts[name] = 0
+            unique_names.append(name)
+
+    return unique_names
+
+
+def create_error_message(response):
+    """
+    Method to print infromation of an error returned by the API to the console
+    Builds the error description from the response object
+    """
+    status = response.status_code
+    if status == 400:
+        prefix = f"\nStatus 400 - Bad Request: {response.url}"
+        payload = response.json()
+        # see https://wiki.oceannetworks.ca/display/O2A for error codes
+        msg = f"{prefix}\n" + "\n".join(
+            [
+                f"API Error {e['errorCode']}: {e['errorMessage']} "
+                f"(parameter: {e['parameter']})"
+                for e in payload["errors"]
+            ]
+        ) + "\n"
+    else:
+        msg = (f"The server request failed with HTTP status {status}.\n"
+            f"Request {response.url}\n\n")
+
+    return msg

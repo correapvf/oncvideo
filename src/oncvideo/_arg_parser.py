@@ -98,14 +98,15 @@ def fdownloadts(args):
     onc_ob = onc(args.token)
     args.deviceCategoryCode = args.deviceCategoryCode.split(",")
     download_ts(onc_ob, args.source, args.deviceCategoryCode, args.output,
-        args.raw, args.merge, tolerance=args.tolerance, units=args.units)
+        args.raw)
 
 
 def fmergets(args):
     """
     run merge_ts function
     """
-    merge_ts(args.source, args.ts_data, args.tolerance, args.units)
+    out = merge_ts(args.source, args.ts_data, args.tolerance, args.units)
+    out.to_csv(args.output, index=False, na_rep='NA')
 
 
 def fdownloadst(args):
@@ -313,13 +314,6 @@ def main(args=None):
         help="Name of the output folder to save files. Default 'output'")
     subparser_downloadts.add_argument('-r', '--raw', action="store_false",
         help='Return raw data from the API call (values with bad flags are kept).')
-    subparser_downloadts.add_argument('-m', '--merge', action="store_true",
-        help="'merge_ts' will run automatically after tssd is downloaded and save the \
-        merged file as '{output}_merged.csv'.")
-    subparser_downloadts.add_argument('-tol', '--tolerance', type=float, default=15,
-        help="Tolarance, in seconds, for timestamps to be merged.")
-    subparser_downloadts.add_argument('-u', '--units', action="store_false",
-        help="Remove units of the vairables in the column names.")
     subparser_downloadts.set_defaults(func=fdownloadts)
 
     # merge time series
@@ -329,6 +323,8 @@ def main(args=None):
     subparser_mergets.add_argument('source', help=help_input)
     subparser_mergets.add_argument('ts_data', help="Folder containg csv files of TSSD \
         downloaded from Oceans 3.")
+    subparser_mergets.add_argument('-o', '--output', default="merged.csv",
+        help="Name of the merged file. Default 'merged.csv'")
     subparser_mergets.add_argument('-t', '--tolerance', type=float, default=15,
         help="Tolarance, in seconds, for timestamps to be merged. Default to 15.")
     subparser_mergets.add_argument('-u', '--units', action="store_false",
