@@ -33,10 +33,9 @@ def _get_dives_api(onc):
     df = df[df["ready"]]
     new = df["html"].str.split(" - ", n = 2, expand = True)
 
-    df.rename(columns={"children.html": "organization",
+    df = df.rename(columns={"children.html": "organization",
                     "children.children.html": "year",
-                    "children.children.children.html": "expedition"},
-                    inplace = True)
+                    "children.children.children.html": "expedition"})
 
     df["dive"] = new[0]
     df["location"] = new[2]

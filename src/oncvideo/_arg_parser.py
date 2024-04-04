@@ -151,6 +151,7 @@ def main(args=None):
 
     parser = argparse.ArgumentParser(
         description="Commands to list and process videos files archived in Ocean3.0.")
+    parser.set_defaults(func=lambda args: parser.print_help())
 
     subparsers = parser.add_subparsers(title="Valid commands",
         description="For more details on one command: oncvideo <command> -h")

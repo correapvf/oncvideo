@@ -1,4 +1,5 @@
 """Module providing functions to download and convert video."""
+import shutil
 from ._utils import run_ffmpeg
 from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg
@@ -14,7 +15,7 @@ def _ffmpeg_run_download(input_file, output_file, skip, params, f, subfolder, vi
 
     # Create ffmpeg command and run
     if len(skip) == 0: # no need to crop video, just move file
-        input_file.rename(output_file)
+        shutil.move(input_file, output_file)
     else:
         ff_cmd = ['ffmpeg'] + skip + ['-i', input_file] + params + [output_file]
         run_ffmpeg(ff_cmd, filename=output_file.name)
@@ -39,7 +40,7 @@ def download_files(source, output='output', trim=False):
     if '*' in source:
         raise ValueError("Input must be a DataFrame or .csv with files to download.")
 
-    header = 'filename,video_filename,timestamp\n'
+    header = 'filename,original_video,timestamp\n'
 
     params = ['-c', 'copy']
 
@@ -98,7 +99,7 @@ def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
         compression, but may not be supported by some players/browsers.
     """
 
-    header = 'filename,video_filename,timestamp\n'
+    header = 'filename,original_video,timestamp\n'
 
     # video filter
     vf_cmd = 'fps=source_fps' # force constant frame rate

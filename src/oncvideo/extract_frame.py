@@ -23,7 +23,7 @@ def _ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video
 
     # rename frames to correct timestamp
     d = outfolder.glob(file_name + "_*.jpg")
-    dout = pd.DataFrame({'filename_old': list(d), 'video_filename': video_name})
+    dout = pd.DataFrame({'filename_old': list(d), 'original_video': video_name})
     if len(dout) > 0: # didn't extracted any frame (e.g. file length is lower than interval)
         dout['filename_split'] = dout['filename_old'].apply(lambda x: x.stem.split('_'))
         dout['timestamp'] = dout['filename_split'].str[-2]
@@ -44,9 +44,9 @@ def _ffmpeg_run_frame(input_file, output_file, skip, params, f, subfolder, video
         # save csv with all frames names + original videos
         if subfolder != '':
             dout['subfolder'] = subfolder[:-1]
-            dout = dout[['subfolder', 'filename', 'video_filename', 'timestamp']]
+            dout = dout[['subfolder', 'filename', 'original_video', 'timestamp']]
         else:
-            dout = dout[['filename', 'video_filename', 'timestamp']]
+            dout = dout[['filename', 'original_video', 'timestamp']]
 
         dout.to_csv(f, mode='a', index=False, header=False, lineterminator='\n')
     else:
@@ -77,7 +77,7 @@ def extract_frame(source, interval, output='frames', trim=False,
         Grab frames at the middle of each interval (default ffmpeg
         behaviour). If False, will grab frames at the start of each interval.
     """
-    header = 'filename,video_filename,timestamp\n'
+    header = 'filename,original_video,timestamp\n'
 
     if interval < 1.0:
         vf_cmd = f'fps={1/interval}'
@@ -154,7 +154,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
     # header for the output csv
 
-    header = f"video_filename,{','.join(fovfolder)}\n"
+    header = f"original_video,{','.join(fovfolder)}\n"
 
     df, folder, f = iterate_init(output, header, df, has_group)
 

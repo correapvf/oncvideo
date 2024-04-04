@@ -26,7 +26,7 @@ def iterate_init(output, header, df, has_group):
     if file_out.exists():
         tmp = pd.read_csv(file_out)
         count = df.shape[0]
-        df = df[~df['filename'].isin(tmp['video_filename'])]
+        df = df[~df['filename'].isin(tmp['original_video'])]
         count -= df.shape[0]
         f = open(file_out, "a", encoding="utf-8")
         print(f"{file_out.name} already exists! {count} files already processed, "
@@ -60,7 +60,7 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params, missing_ok=
                 subfolder = ''
 
             group = group.copy()
-            group['video_filename'] =  group['filename'].copy()
+            group['original_video'] =  group['filename'].copy()
             group['skip'] = [[]] * len(group)
 
             if trim:
@@ -80,7 +80,7 @@ def iterate_ffmpeg(source, output, header, trim, ffmpeg_run, params, missing_ok=
                     tmpfile = row['urlfile']
 
                 ffmpeg_run(tmpfile, output_file, row['skip'], params, f,
-                    subfolder, row['video_filename'])
+                    subfolder, row['original_video'])
 
                 if need_download:
                     tmpfile.unlink(missing_ok)
