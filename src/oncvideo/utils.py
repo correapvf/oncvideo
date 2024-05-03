@@ -80,4 +80,4 @@ def name_to_timestamp_dc(filenames):
         return x, x.dc
 
     tmp = filenames.apply(_name_to_timestamp_dc_helper).to_list()
-    return pd.DataFrame(tmp, columns=['timestamp', 'deviceCode'])
+    return pd.DataFrame(tmp, columns=['timestamp', 'deviceCode'], index=filenames.index)

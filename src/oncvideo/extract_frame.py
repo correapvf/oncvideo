@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 from tqdm import tqdm
 import pandas as pd
+import cv2
 from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
 from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
@@ -247,3 +248,51 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
     finally:
         pbar.close()
         f.close()
+
+
+
+def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, output='timelapse'):
+    """
+    Generate timelapse video from images
+
+    Parameters
+    ----------
+    folder : str, default 'fovs'
+        Path to a folder where .jpg images are stored.
+    time_format : str, default '%Y/%m/%d %Hh'
+        Format how the timestamp will be writen on the video.
+    fps : float, default 10
+        Timelapse video FPS.
+    output : str, default 'timelapse'
+        Name of the video to be generated, without extension.
+    """
+    folder = Path(folder)
+
+    fu = [f for f in folder.iterdir() if f.is_dir()]
+    fu += [folder]
+
+    for f in fu:
+        images = f.glob("*.jpg")
+        images = list(images)
+        if len(images) < 1:
+            continue
+
+        imgfile = images[0]
+        img = cv2.imread(str(imgfile), cv2.IMREAD_GRAYSCALE)
+        video_dim = img.shape[::-1]
+        output_video = str(f / (output + '.mp4'))
+        vidwriter = cv2.VideoWriter(output_video, cv2.VideoWriter_fourcc(*"mp4v"), fps, video_dim)
+
+        for imgfile in images:
+
+            img = cv2.imread(str(imgfile), cv2.IMREAD_COLOR)
+            timestamp = name_to_timestamp(imgfile.name)
+            timestamp = timestamp.strftime(time_format)
+
+            # Using cv2.putText() method
+            img = cv2.putText(img, timestamp, org=(30, 50), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=1, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+
+            vidwriter.write(img)
+
+        vidwriter.release()

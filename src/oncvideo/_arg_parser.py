@@ -6,7 +6,7 @@ from .list_files import list_file, list_file_batch
 from .dives_onc import get_dives
 from .video_info import video_info
 from .didson_file import didson_info
-from .extract_frame import extract_frame, extract_fov
+from .extract_frame import extract_frame, extract_fov, make_timelapse
 from .download_files import download_files, to_mp4
 from .ts_download import download_ts, merge_ts
 from .seatube import download_st, link_st, rename_st
@@ -140,6 +140,12 @@ def frenamest(args):
     for f in directory.rglob(path.name):
         newname = rename_st(f.name)
         f.rename(newname)
+
+def fmaketimelapse(args):
+    """
+    run amke_timelapse function
+    """
+    make_timelapse(args.folder, args.time_format, args.fps, args.output)
 
 
 def main(args=None):
@@ -359,6 +365,19 @@ def main(args=None):
     subparser_renamest.add_argument('path', help="Path to a file, or a Glob pattern to match \
         multiple files (use *).")
     subparser_renamest.set_defaults(func=frenamest)
+
+    # Generate timelapse video from images
+    subparser_maketimelapse = subparsers.add_parser(
+        'timelapse', help=" Generate timelapse video from images")
+    subparser_maketimelapse.add_argument('-f', '--folder', default="fovs",
+        help="Path to a folder where .jpg images are stored.")
+    subparser_maketimelapse.add_argument('-t', '--time_format', default="%Y/%m/%d %Hh",
+        help="Format how the timestamp will be writen on the video.")
+    subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
+        help="Timelapse video FPS.")
+    subparser_maketimelapse.add_argument('-o', '--output', default='timelapse',
+        help="Name of the video to be generated, without extension.")
+    subparser_maketimelapse.set_defaults(func=fmaketimelapse)
 
     args = parser.parse_args(args)
     args.func(args)

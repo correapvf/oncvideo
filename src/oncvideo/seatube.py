@@ -100,7 +100,7 @@ def _generate_link(timediff, idd, ts):
         return ''
 
 
-def link_st(onc, source):
+def link_st(onc, source, dive=False):
     """
     Generate Seatube link
 
@@ -117,6 +117,8 @@ def link_st(onc, source):
         match multiple files (use *). If a DataFrame or a .csv file,
         it must have a column 'filename' that follow the ONC convention
         or columns 'timestamp' and 'deviceCode'.
+    dive : bool, default False
+        Include a column in the output with dives where the video is from
 
     Returns
     -------
@@ -126,6 +128,10 @@ def link_st(onc, source):
     """
     df, _, _ = parse_file_path(source, need_filename=False)
     df.drop(columns='urlfile', inplace=True)
+
+    cols = ['id','startDate','endDate']
+    if dive:
+        cols += ['dive']
 
     index = df['filename'].str.count('\\.') == 1
     df.loc[index, 'filename'] = df['filename'].str.replace('.', '.000Z.', regex=False)
@@ -148,7 +154,7 @@ def link_st(onc, source):
 
     dives = get_dives(onc)
     dives = dives[dives['deviceCode'].isin(df['deviceCode'].unique())]
-    dives = dives[['id','startDate','endDate']] # 'dive'
+    dives = dives[cols]
 
     if dives.shape[0] > 0:
         dives['startDate'] = pd.to_datetime(dives['startDate'], utc=True)
