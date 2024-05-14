@@ -8,7 +8,7 @@ from .video_info import video_info
 from .didson_file import didson_info
 from .extract_frame import extract_frame, extract_fov, make_timelapse
 from .download_files import download_files, to_mp4
-from .ts_download import download_ts, merge_ts
+from .ts_download import download_ts, merge_ts, clean_nav
 from .seatube import download_st, link_st, rename_st
 
 # Default functions used by each subcommand
@@ -98,7 +98,7 @@ def fdownloadts(args):
     onc_ob = onc(args.token)
     args.deviceCategoryCode = args.deviceCategoryCode.split(",")
     download_ts(onc_ob, args.source, args.deviceCategoryCode, args.output,
-        args.raw)
+        args.options)
 
 
 def fmergets(args):
@@ -143,9 +143,15 @@ def frenamest(args):
 
 def fmaketimelapse(args):
     """
-    run amke_timelapse function
+    run make_timelapse function
     """
-    make_timelapse(args.folder, args.time_format, args.fps, args.output)
+    make_timelapse(args.folder, args.time_format, args.fps, args.fontScale, args.logo)
+
+def fnavclean(args):
+    """
+    run nav_clean function
+    """
+    clean_nav(args.folder, args.depth, args.outlier)
 
 
 def main(args=None):
@@ -319,8 +325,10 @@ def main(args=None):
     subparser_downloadts.add_argument('-t', '--token', help='API token')
     subparser_downloadts.add_argument('-o', '--output', default="output",
         help="Name of the output folder to save files. Default 'output'")
-    subparser_downloadts.add_argument('-r', '--raw', action="store_false",
-        help='Return raw data from the API call (values with bad flags are kept).')
+    subparser_downloadts.add_argument('-p', '--options', default="fixed",
+        help="Set options for search querry. If 'fixed', return clean resampled data \
+        for every minute, and maximum gap of one day between queries. \
+        If 'rov', return raw not resampled data, and set a maximum gap of one hour between queries.")
     subparser_downloadts.set_defaults(func=fdownloadts)
 
     # merge time series
@@ -368,16 +376,29 @@ def main(args=None):
 
     # Generate timelapse video from images
     subparser_maketimelapse = subparsers.add_parser(
-        'timelapse', help=" Generate timelapse video from images")
+        'timelapse', help="Generate timelapse video from images")
     subparser_maketimelapse.add_argument('-f', '--folder', default="fovs",
-        help="Path to a folder where .jpg images are stored.")
+        help="Path to a folder where .jpg images are stored. Default 'fovs'.")
     subparser_maketimelapse.add_argument('-t', '--time_format', default="%Y/%m/%d %Hh",
-        help="Format how the timestamp will be writen on the video.")
+        help="Format how the timestamp will be writen on the video. Default '%%Y/%%m/%%d %%Hh'.")
     subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
-        help="Timelapse video FPS.")
-    subparser_maketimelapse.add_argument('-o', '--output', default='timelapse',
-        help="Name of the video to be generated, without extension.")
+        help="Timelapse video FPS. Default 10.")
+    subparser_maketimelapse.add_argument('-s', '--fontScale', type=float, default=1,
+        help="Font scale for the timestamp. Default 1.")
+    subparser_maketimelapse.add_argument('-l', '--logo', action="store_true",
+        help="Include ONC logo on the video.")
     subparser_maketimelapse.set_defaults(func=fmaketimelapse)
+
+    # Clean navigational data
+    subparser_navclean = subparsers.add_parser(
+        'cleannav', help="Clean navigational data")
+    subparser_navclean.add_argument('-f', '--folder', default="output",
+        help="Path to a folder where .csv files are stored. Default 'output'.")
+    subparser_navclean.add_argument('-d', '--depth', type=float, default=5,
+        help="Only keep depths lower than this threshold. Default 5 m.")
+    subparser_navclean.add_argument('-o', '--outlier', action="store_true",
+        help="Remove coordinates that are far away from the median.")
+    subparser_navclean.set_defaults(func=fnavclean)
 
     args = parser.parse_args(args)
     args.func(args)

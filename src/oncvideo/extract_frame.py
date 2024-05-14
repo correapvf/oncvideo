@@ -1,10 +1,12 @@
 """Function to extract frames from videos"""
+
 from pathlib import Path
 import tempfile
 from tqdm import tqdm
+import numpy as np
 import pandas as pd
 import cv2
-from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
+from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg, LOGO
 from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
 
@@ -251,7 +253,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
 
 
-def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, output='timelapse'):
+def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=1, logo=False):
     """
     Generate timelapse video from images
 
@@ -263,15 +265,20 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, output='ti
         Format how the timestamp will be writen on the video.
     fps : float, default 10
         Timelapse video FPS.
-    output : str, default 'timelapse'
-        Name of the video to be generated, without extension.
+    fontScale : float, default 1
+        Font scale for the timestamp. Increase values for a larger font size.
+    logo : bool, default False
+        Include ONC logo on the video?
     """
     folder = Path(folder)
 
     fu = [f for f in folder.iterdir() if f.is_dir()]
     fu += [folder]
 
-    for f in fu:
+    if logo:
+        logoimg = cv2.imdecode(np.frombuffer(LOGO, np.uint8), cv2.IMREAD_COLOR)
+
+    for f in tqdm(fu, desc='Processed folders'):
         images = f.glob("*.jpg")
         images = list(images)
         if len(images) < 1:
@@ -280,18 +287,38 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, output='ti
         imgfile = images[0]
         img = cv2.imread(str(imgfile), cv2.IMREAD_GRAYSCALE)
         video_dim = img.shape[::-1]
-        output_video = str(f / (output + '.mp4'))
+        output_video = f.name + '.mp4'
         vidwriter = cv2.VideoWriter(output_video, cv2.VideoWriter_fourcc(*"mp4v"), fps, video_dim)
 
-        for imgfile in images:
+        spacing = img.shape[0] // 40 # 2.5% of the image size
+        ctxt = (spacing, spacing+int(22*fontScale))
+
+        if logo:
+            size_logo = img.shape[0] // 13 # 7.5% of the image size
+            logo_resize = cv2.resize(logoimg, (size_logo,size_logo), interpolation=cv2.INTER_LINEAR)
+
+            # top right corner
+            top_y = spacing
+            left_x = img.shape[1] - spacing - size_logo
+            bottom_y = spacing + size_logo 
+            right_x = img.shape[1] - spacing
+
+
+        for imgfile in tqdm(images, leave=False):
 
             img = cv2.imread(str(imgfile), cv2.IMREAD_COLOR)
             timestamp = name_to_timestamp(imgfile.name)
             timestamp = timestamp.strftime(time_format)
 
             # Using cv2.putText() method
-            img = cv2.putText(img, timestamp, org=(30, 50), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale=1, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+            img = cv2.putText(img, timestamp, org=ctxt, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+
+            # insert logo
+            if logo:
+                destination = img[top_y:bottom_y, left_x:right_x] 
+                result = cv2.addWeighted(destination, 1, logo_resize, 0.5, 0)
+                img[top_y:bottom_y, left_x:right_x] = result
 
             vidwriter.write(img)
 

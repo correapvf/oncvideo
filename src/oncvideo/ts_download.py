@@ -6,18 +6,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from tqdm import tqdm
 import pandas as pd
+import geopandas as gpd
+from shapely.geometry import LineString
 from ._utils import parse_file_path, make_names, create_error_message
 from .utils import name_to_timestamp_dc
 
 
-def _download_ts_helper(df, onc, category_code, clean, output, f, fo, nworkers):
+def _download_ts_helper(df, onc, category_code, params, output, f, fo, nworkers):
     """
     Helper function to download time series data
     """
-    # group if gap between timestamps is bigger than one day
-    df.sort_values(['deviceCode', 'timestamp'], inplace=True)
-    df['gap'] = (df.groupby('deviceCode')['timestamp'].diff() > pd.Timedelta(1, "d")).cumsum()
-
     # start for loop
     nloop = 0
     futures = []
@@ -71,10 +69,9 @@ def _download_ts_helper(df, onc, category_code, clean, output, f, fo, nworkers):
                         'dateTo'    : date_to,
                         "dataProductCode": "TSSD",
                         "extension" : "csv",
-                        'dpo_qualityControl': clean,
-                        'dpo_resample': 'none',
-                        'dpo_dataGaps': 0
                     }
+
+                    filters = filters | params
 
                     if fo is not None:
                         r = fo.loc[(fo['deviceCode']==name[0]) & (fo['dateFrom']==date_o_from) &
@@ -182,7 +179,7 @@ def _execute_download(onc, filters, output, f, to_write, log):
 
 
 def download_ts(onc, source, category_code, output='output',
-    clean=True, nworkers=16):
+    options='fixed', nworkers=16):
     """
     Donwload timeseries data for video files
 
@@ -203,10 +200,11 @@ def download_ts(onc, source, category_code, output='output',
         Category Code of data to download. E.g. NAV, CTD, OXYSENSOR, etc.
     output : str, default 'output'
         Name of the output folder to save files.
-    clean : bool, default True
-        Return clean data from the API call (values with bad flags are removed),
-        else return raw data.
-    nworkers : int, default 8
+    options : str, default 'fixed'
+        Set options for search querry. If 'fixed', return clean resampled data
+        for every minute, and maximum gap of one day between queries.
+        If 'rov', return raw not resampled data, and set a maximum gap of one hour between queries.
+    nworkers : int, default 16
         Number of simultaneous API calls to make
     """
     df, _, _ = parse_file_path(source, need_filename=False)
@@ -222,7 +220,24 @@ def download_ts(onc, source, category_code, output='output',
         raise ValueError("Columns 'filename' or ('timestamp' and 'deviceCode') must be provided.")
 
     # fix a few parameters
-    clean = 0 if clean else 1
+    if options == 'rov':
+        params = {
+            'dpo_qualityControl': 0,
+            'dpo_resample': 'none',
+            'dpo_dataGaps': 0
+        }
+        gap = pd.Timedelta('1h')
+    elif options == 'fixed':
+        params = {
+            'dpo_qualityControl': 1,
+            'dpo_resample': 'average',
+            'dpo_average': 60,
+            'dpo_dataGaps': 0
+        }
+        gap = pd.Timedelta('1d')
+    else:
+        raise ValueError("options must be 'fixed' or 'rov'.")
+
 
     if not isinstance(category_code, list):
         category_code = [category_code]
@@ -239,8 +254,12 @@ def download_ts(onc, source, category_code, output='output',
         f = open(file_out, "w", encoding="utf-8")
         f.write("deviceCode,dateFrom,dateTo,locationCode,deviceCategoryCode,downloaded\n")
 
+    # group if gap between timestamps is bigger than one day
+    df.sort_values(['deviceCode', 'timestamp'], inplace=True)
+    df['gap'] = (df.groupby('deviceCode')['timestamp'].diff() > gap).cumsum()
+
     # download files
-    _download_ts_helper(df, onc, category_code, clean, output_pathlib, f, fo, nworkers)
+    _download_ts_helper(df, onc, category_code, params, output_pathlib, f, fo, nworkers)
 
     f.close()
 
@@ -393,3 +412,67 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         df_out.drop(columns=cleanup, inplace=True)
 
     return df_out
+
+
+def clean_nav(folder = 'output', depth = 5, remove_outlier=False):
+    """
+    Clean navigational data
+
+    Parameters
+    ----------
+    folder : str, default 'fovs'
+        Path to a folder where .jpg images are stored.
+    depth : float, default 5
+        Only keep depths lower than this threshold
+    remove_outlier : bool, default False
+        If True, will remove coordinates that are far away from the median.
+
+    """
+    folder = Path(folder)
+
+    files = folder.glob("*_NavigationSystem_*.csv")
+
+    out = Path('nav_clean')
+    out.mkdir()
+
+    gdf_line = []
+
+    for file in files:
+        # read csv and get lat and long
+        data = read_ts(file, units=False)
+        df = data[['Time_UTC','Latitude','Longitude']].copy()
+        df['Time_UTC'] = df['Time_UTC'].dt.round('1s')
+        df = df.groupby('Time_UTC').mean()
+        df = df.dropna(how='any', subset=['Latitude','Longitude'])
+
+        # subset by depth
+        df2 = data[['Time_UTC','Depth']]
+        df2 = df2[df2['Depth'] > depth]
+        tmp = pd.merge_asof(df, df2, on='Time_UTC',
+            tolerance=pd.Timedelta(15, 's'), direction='nearest')
+
+        if remove_outlier:
+            Q1 = tmp.Latitude.quantile(0.25)
+            Q3 = tmp.Latitude.quantile(0.75)
+            IQR = (Q3 - Q1) * 1.5
+            tmp = tmp[tmp.Latitude.between(Q1-IQR, Q3+IQR)]
+
+            Q1 = tmp.Longitude.quantile(0.25)
+            Q3 = tmp.Longitude.quantile(0.75)
+            IQR = (Q3 - Q1) * 1.5
+            tmp = tmp[tmp.Longitude.between(Q1-IQR, Q3+IQR)]
+
+        # create line feature
+        geometry = [LineString(tmp[['Longitude', 'Latitude']].values)]
+        geodf = pd.DataFrame({'file': file.name}, index=[0])
+        gdf = gpd.GeoDataFrame(geodf, geometry=geometry, crs="EPSG:4326")
+        gdf_line.append(gdf)
+
+        # create point feature
+        geometry2 = gpd.points_from_xy(tmp.Longitude, tmp.Latitude)
+        gdf2 = gpd.GeoDataFrame(tmp, geometry=geometry2, crs="EPSG:4326")
+        gdf2.to_file(out/file.with_suffix('.gpkg').name,
+            driver="GPKG", layer=file.stem)
+
+    gdf_line = pd.concat(gdf_line, ignore_index=True)
+    gdf_line.to_file('nav_clean/lines.gpkg', driver="GPKG", layer="lines")
