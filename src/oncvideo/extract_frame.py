@@ -253,7 +253,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
 
 
-def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=1, logo=False):
+def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=1, logo=False, caption=None):
     """
     Generate timelapse video from images
 
@@ -269,6 +269,8 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
         Font scale for the timestamp. Increase values for a larger font size.
     logo : bool, default False
         Include ONC logo on the video?
+    caption : str, default None
+        Insert a caption at the bottom of the screen. You can break lines with <br> tag.
     """
     folder = Path(folder)
 
@@ -292,6 +294,7 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
 
         spacing = img.shape[0] // 40 # 2.5% of the image size
         ctxt = (spacing, spacing+int(22*fontScale))
+        font = cv2.FONT_HERSHEY_SIMPLEX
 
         if logo:
             size_logo = img.shape[0] // 13 # 7.5% of the image size
@@ -311,8 +314,17 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
             timestamp = timestamp.strftime(time_format)
 
             # Using cv2.putText() method
-            img = cv2.putText(img, timestamp, org=ctxt, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            img = cv2.putText(img, timestamp, org=ctxt, fontFace=font,
                             fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+
+            if caption is not None:
+                textY = img.shape[0]-spacing
+                for line in reversed(caption.split('<br>')):
+                    textsize = cv2.getTextSize(line, font, fontScale, thickness=2)[0]
+                    textX = (img.shape[1] - textsize[0]) // 2
+                    img = cv2.putText(img, line, org=(textX, textY), fontFace=font,
+                                fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+                    textY = textY - textsize[1] - spacing
 
             # insert logo
             if logo:

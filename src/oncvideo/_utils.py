@@ -33,13 +33,13 @@ def strftd(nseconds):
     return f"{hours:02.0f}:{minutes:02.0f}:{seconds:06.3f}"
 
 
-def strftd2(td):
+def strftd2(td, div='-'):
     """
     Convert timedelta to mm:ss format
     """
     nseconds = td.total_seconds()
     minutes, seconds = divmod(nseconds, 60)
-    return f"{minutes:02.0f}-{seconds:02.0f}"
+    return f"{minutes:02.0f}{div}{seconds:02.0f}"
 
 
 @backoff.on_exception(
