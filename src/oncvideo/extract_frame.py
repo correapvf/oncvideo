@@ -99,7 +99,7 @@ def extract_frame(source, interval, output='frames', trim=False,
         interval2 = interval
 
     params = {'ffmpeg': ['-vf', vf_cmd,
-            '-qmin', '1', '-qmax', '1', '-q:v', '1'],
+            '-qmin', '1', '-q:v', '1'],
         'interval': interval,
         'interval2': interval2
     }
@@ -226,7 +226,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
                         new_name = outfolder / p / new_name_p.with_suffix('.jpg')
                         ff_cmd = ['ffmpeg', '-ss', fov_str, '-i',
                             tmpfile_str] + vf_cmd + ['-frames:v', '1', '-update', '1',
-                            '-qmin', '1', '-qmax', '1', '-q:v', '1', new_name]
+                            '-qmin', '1', '-q:v', '1', new_name]
 
                     else:
                         new_name = outfolder / p / new_name_p
@@ -253,7 +253,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
 
 
-def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=1, logo=False, caption=None):
+def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', time_offset=None, fps=10, fontScale=1, logo=False, caption=None):
     """
     Generate timelapse video from images
 
@@ -263,6 +263,10 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
         Path to a folder where .jpg images are stored.
     time_format : str, default '%Y/%m/%d %Hh'
         Format how the timestamp will be writen on the video.
+    time_offset : float, default None
+        If set, the datetime will display as elepsed days from the first image.
+        In this case, the 'time_format' argument is ignored. If higher than 0, the number
+        will offset the initial counter on X number of days.
     fps : float, default 10
         Timelapse video FPS.
     fontScale : float, default 1
@@ -279,6 +283,11 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
 
     if logo:
         logoimg = cv2.imdecode(np.frombuffer(LOGO, np.uint8), cv2.IMREAD_COLOR)
+    
+    format_elepsed = time_offset is not None
+    if format_elepsed:
+        time_offset = pd.to_timedelta(time_offset, unit='days')
+
 
     for f in tqdm(fu, desc='Processed folders'):
         images = f.glob("*.jpg")
@@ -297,21 +306,30 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
         font = cv2.FONT_HERSHEY_SIMPLEX
 
         if logo:
-            size_logo = img.shape[0] // 13 # 7.5% of the image size
+            size_logo = img.shape[0] // 7 # 7.5% of the image size
             logo_resize = cv2.resize(logoimg, (size_logo,size_logo), interpolation=cv2.INTER_LINEAR)
 
             # top right corner
             top_y = spacing
             left_x = img.shape[1] - spacing - size_logo
-            bottom_y = spacing + size_logo 
+            bottom_y = spacing + size_logo
             right_x = img.shape[1] - spacing
 
+        if format_elepsed:
+            timestamp0 = name_to_timestamp(imgfile.name)
 
+        
+        # Start loop for each image
         for imgfile in tqdm(images, leave=False):
 
             img = cv2.imread(str(imgfile), cv2.IMREAD_COLOR)
+
+            # format timestamp of time lapsed string
             timestamp = name_to_timestamp(imgfile.name)
-            timestamp = timestamp.strftime(time_format)
+            if format_elepsed:
+                timestamp = str(timestamp - timestamp0 + time_offset)[:-6] + 'h'
+            else:
+                timestamp = timestamp.strftime(time_format)
 
             # Using cv2.putText() method
             img = cv2.putText(img, timestamp, org=ctxt, fontFace=font,
@@ -328,9 +346,10 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', fps=10, fontScale=
 
             # insert logo
             if logo:
-                destination = img[top_y:bottom_y, left_x:right_x] 
-                result = cv2.addWeighted(destination, 1, logo_resize, 0.5, 0)
-                img[top_y:bottom_y, left_x:right_x] = result
+                # destination = img[top_y:bottom_y, left_x:right_x]
+                # result = cv2.addWeighted(destination, 1, logo_resize, 0.5, 0)
+                # img[top_y:bottom_y, left_x:right_x] = result
+                img[top_y:bottom_y, left_x:right_x] = logo_resize
 
             vidwriter.write(img)
 

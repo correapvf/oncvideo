@@ -145,7 +145,7 @@ def fmaketimelapse(args):
     """
     run make_timelapse function
     """
-    make_timelapse(args.folder, args.time_format, args.fps, args.fontScale, args.logo, args.caption)
+    make_timelapse(args.folder, args.time_format, args.time_offset, args.fps, args.fontScale, args.logo, args.caption)
 
 def fnavclean(args):
     """
@@ -380,6 +380,10 @@ def main(args=None):
         help="Path to a folder where .jpg images are stored. Default 'fovs'.")
     subparser_maketimelapse.add_argument('-t', '--time_format', default="%Y/%m/%d %Hh",
         help="Format how the timestamp will be writen on the video. Default '%%Y/%%m/%%d %%Hh'.")
+    subparser_maketimelapse.add_argument('-o', '--time_offset', type=float,
+        help="If set, the datetime will display as elepsed days from the first image. \
+            In this case, the 'time_format' argument is ignored. If higher than 0, the number \
+            will offset the initial counter on X number of days.")
     subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
         help="Timelapse video FPS. Default 10.")
     subparser_maketimelapse.add_argument('-s', '--fontScale', type=float, default=1,

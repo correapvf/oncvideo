@@ -310,7 +310,7 @@ def read_ts(file, units=True):
     n = next(i for i, line in enumerate(r) if '## END HEADER' in line) + 1
 
     # Extract column names
-    cnames = r[n - 2]
+    cnames = r[n - 2][:-1]
     cnames = cnames.split(', ')
     cnames = [cname[1:-1] for cname in cnames]
     cnames[0] = 'Time_UTC'
@@ -386,17 +386,22 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
 
     if ts_folder_csv.exists():
         ts_data = pd.read_csv(ts_folder_csv)
+        devide_codes = df['deviceCode'].unique()
     else:
         print(f"File {ts_folder_csv.name} not found. Assuming all files in {ts_data}"
-            "are from the same location. If timelapses and files are from different"
-            "locations and overlap in time, the merge operations will be wrong!")
-        d = ts_folder.glob("*.jpg")
-        ts_data = pd.DataFrame({'deviceCode': 'tmp', 'downloaded': list(d)})
+            "are from the same location. Make sure you are not merging data of different"
+            "locations that overlap in time!")
+        d = ts_folder.glob("*.csv")
+        d = list(d)
+        d = [x.name for x in d]
+        devide_codes = [df['deviceCode'].iloc[0]]
+        ts_data = pd.DataFrame({'deviceCode': df['deviceCode'].iloc[0], 'downloaded': d})
+        df['deviceCode'] = df['deviceCode'].iloc[0]
 
     df.sort_values(['deviceCode', 'timestamp'], inplace=True)
 
     df_out = []
-    for dc in df['deviceCode'].unique():
+    for dc in devide_codes:
         ts_data_dc = ts_data[ts_data['deviceCode'] == dc]
         tmp = df[df['deviceCode'] == dc]
 
