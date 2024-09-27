@@ -1,5 +1,6 @@
 """ Multiple helper functions used for the package"""
 from collections import defaultdict
+from string import Template
 from pathlib import Path
 import requests
 import numpy as np
@@ -10,6 +11,27 @@ from ffmpeg_progress_yield import FfmpegProgress
 from .utils import name_to_timestamp
 
 URL = "https://data.oceannetworks.ca/AdFile?filename="
+
+class DeltaTemplate(Template):
+    delimiter = "%"
+
+def strfdelta(tdelta, fmt):
+    """
+    A custom function to convert timedelta object to string with format
+    """
+    d = {}
+    l = {'y': 31536000, 'm': 2592000, 'w': 604800,'d': 86400, 'H': 3600, 'M': 60, 'S': 1}
+    f = {'y': '{:d}', 'm': '{:d}', 'w': '{:d}', 'd': '{:d}', 'H': '{:02d}', 'M': '{:02d}', 'S': '{:02d}'}
+    rem = int(tdelta.total_seconds())
+
+    for k in ('y', 'm', 'w', 'd', 'H', 'M', 'S' ):
+        if f"%{k}" in fmt or f"%{{{k}}}" in fmt:
+            tmp, rem = divmod(rem, l[k])
+            d[k] = f[k].format(tmp)
+
+    t = DeltaTemplate(fmt)
+    return t.substitute(**d)
+
 
 
 def sizeof_fmt(num, suffix="B"):

@@ -6,7 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import cv2
-from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg, LOGO
+from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg, LOGO, strfdelta
 from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
 
@@ -253,7 +253,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
 
 
-def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', time_offset=None, fps=10, fontScale=1, logo=False, caption=None):
+def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time_round=None, time_offset=0, fps=10, fontScale=1, logo=False, caption=None):
     """
     Generate timelapse video from images
 
@@ -261,12 +261,20 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', time_offset=None, 
     ----------
     folder : str, default 'fovs'
         Path to a folder where .jpg images are stored.
-    time_format : str, default '%Y/%m/%d %Hh'
-        Format how the timestamp will be writen on the video.
-    time_offset : float, default None
-        If set, the datetime will display as elepsed days from the first image.
-        In this case, the 'time_format' argument is ignored. If higher than 0, the number
-        will offset the initial counter on X number of days.
+    time_display : {'elapsed', 'current', 'none'}
+        How to print the time on the frame. 'elapsed' will display as elapsed time since first
+        frame, offset by 'time_offset'. 'current' will display the current real time of the frame.
+        'none' will not display time.
+    time_format : str, default '%Y/%m/%d %Hh' if time_display='current', and '%d days %{H}h' if time_display='elapsed'
+        Format how the timestamp will be writen on the video. For time_display='current', check formating options for
+        'strftime'. For time_display='elapsed', options are %y %m %w %d %H %M %S for years, months,
+        weeks, days, hours, minutes, seconds.
+    time_round : str, default None
+        Frequency string indicating the rounding resolution of the displayed timestamp.
+        Passed to pandas.Timedelta.round or pandas.Timestamp.round
+    time_offset : str, timedelta or float, default 0
+        Offset the time displayed in the frame if time_display='elapsed'.
+        Passed to pd.to_timedelta, check it's documentation for options.
     fps : float, default 10
         Timelapse video FPS.
     fontScale : float, default 1
@@ -283,11 +291,17 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', time_offset=None, 
 
     if logo:
         logoimg = cv2.imdecode(np.frombuffer(LOGO, np.uint8), cv2.IMREAD_COLOR)
-    
-    format_elepsed = time_offset is not None
-    if format_elepsed:
-        time_offset = pd.to_timedelta(time_offset, unit='days')
 
+    if time_display not in ['elapsed', 'current', 'none']:
+        raise ValueError("'time_display' must be one of 'elapsed', 'current' or 'none'")
+
+    do_time = False if time_display == 'none' else True
+
+    if do_time:
+        time_offset = pd.to_timedelta(time_offset)
+
+        if time_format is None:
+            time_format = '%Y/%m/%d %Hh' if time_display == 'current' else '%d days %{H}h'
 
     for f in tqdm(fu, desc='Processed folders'):
         images = f.glob("*.jpg")
@@ -315,25 +329,32 @@ def make_timelapse(folder='fovs', time_format='%Y/%m/%d %Hh', time_offset=None, 
             bottom_y = spacing + size_logo
             right_x = img.shape[1] - spacing
 
-        if format_elepsed:
+        if do_time:
             timestamp0 = name_to_timestamp(imgfile.name)
 
-        
+
         # Start loop for each image
         for imgfile in tqdm(images, leave=False):
 
             img = cv2.imread(str(imgfile), cv2.IMREAD_COLOR)
 
             # format timestamp of time lapsed string
-            timestamp = name_to_timestamp(imgfile.name)
-            if format_elepsed:
-                timestamp = str(timestamp - timestamp0 + time_offset)[:-6] + 'h'
-            else:
-                timestamp = timestamp.strftime(time_format)
+            if do_time:
+                timestamp = name_to_timestamp(imgfile.name)
 
-            # Using cv2.putText() method
-            img = cv2.putText(img, timestamp, org=ctxt, fontFace=font,
-                            fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
+                if time_display == 'elapsed':
+                    timedelta = timestamp - timestamp0 + time_offset
+                    if time_round is not None:
+                        timedelta = timedelta.round(time_round)
+                    timestamp = strfdelta(timedelta, time_format)
+                else:
+                    if time_round is not None:
+                        timedelta = timedelta.round(time_round)
+                    timestamp = timestamp.strftime(time_format)
+
+                # Using cv2.putText() method
+                img = cv2.putText(img, timestamp, org=ctxt, fontFace=font,
+                                fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
 
             if caption is not None:
                 textY = img.shape[0]-spacing

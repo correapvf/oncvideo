@@ -6,8 +6,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from tqdm import tqdm
 import pandas as pd
-import geopandas as gpd
-from shapely.geometry import LineString
 from ._utils import parse_file_path, make_names, create_error_message
 from .utils import name_to_timestamp_dc
 
@@ -98,7 +96,7 @@ def _download_ts_helper(df, onc, category_code, params, output, f, fo, nworkers)
 
 def _execute_download(onc, filters, output, f, to_write, log):
     """
-    function passed to thread
+    function passed to threadE
     """
     params_request = {
         "method": "request",
@@ -417,67 +415,3 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         df_out.drop(columns=cleanup, inplace=True)
 
     return df_out
-
-
-def clean_nav(folder = 'output', depth = 5, remove_outlier=False):
-    """
-    Clean navigational data
-
-    Parameters
-    ----------
-    folder : str, default 'fovs'
-        Path to a folder where .jpg images are stored.
-    depth : float, default 5
-        Only keep depths lower than this threshold
-    remove_outlier : bool, default False
-        If True, will remove coordinates that are far away from the median.
-
-    """
-    folder = Path(folder)
-
-    files = folder.glob("*_NavigationSystem_*.csv")
-
-    out = Path('nav_clean')
-    out.mkdir()
-
-    gdf_line = []
-
-    for file in files:
-        # read csv and get lat and long
-        data = read_ts(file, units=False)
-        df = data[['Time_UTC','Latitude','Longitude']].copy()
-        df['Time_UTC'] = df['Time_UTC'].dt.round('1s')
-        df = df.groupby('Time_UTC').mean()
-        df = df.dropna(how='any', subset=['Latitude','Longitude'])
-
-        # subset by depth
-        df2 = data[['Time_UTC','Depth']]
-        df2 = df2[df2['Depth'] > depth]
-        tmp = pd.merge_asof(df, df2, on='Time_UTC',
-            tolerance=pd.Timedelta(15, 's'), direction='nearest')
-
-        if remove_outlier:
-            Q1 = tmp.Latitude.quantile(0.25)
-            Q3 = tmp.Latitude.quantile(0.75)
-            IQR = (Q3 - Q1) * 1.5
-            tmp = tmp[tmp.Latitude.between(Q1-IQR, Q3+IQR)]
-
-            Q1 = tmp.Longitude.quantile(0.25)
-            Q3 = tmp.Longitude.quantile(0.75)
-            IQR = (Q3 - Q1) * 1.5
-            tmp = tmp[tmp.Longitude.between(Q1-IQR, Q3+IQR)]
-
-        # create line feature
-        geometry = [LineString(tmp[['Longitude', 'Latitude']].values)]
-        geodf = pd.DataFrame({'file': file.name}, index=[0])
-        gdf = gpd.GeoDataFrame(geodf, geometry=geometry, crs="EPSG:4326")
-        gdf_line.append(gdf)
-
-        # create point feature
-        geometry2 = gpd.points_from_xy(tmp.Longitude, tmp.Latitude)
-        gdf2 = gpd.GeoDataFrame(tmp, geometry=geometry2, crs="EPSG:4326")
-        gdf2.to_file(out/file.with_suffix('.gpkg').name,
-            driver="GPKG", layer=file.stem)
-
-    gdf_line = pd.concat(gdf_line, ignore_index=True)
-    gdf_line.to_file('nav_clean/lines.gpkg', driver="GPKG", layer="lines")

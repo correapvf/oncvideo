@@ -8,7 +8,7 @@ from .video_info import video_info
 from .didson_file import didson_info
 from .extract_frame import extract_frame, extract_fov, make_timelapse
 from .download_files import download_files, to_mp4
-from .ts_download import download_ts, merge_ts, clean_nav
+from .ts_download import download_ts, merge_ts
 from .seatube import download_st, link_st, rename_st
 
 # Default functions used by each subcommand
@@ -145,13 +145,8 @@ def fmaketimelapse(args):
     """
     run make_timelapse function
     """
-    make_timelapse(args.folder, args.time_format, args.time_offset, args.fps, args.fontScale, args.logo, args.caption)
-
-def fnavclean(args):
-    """
-    run nav_clean function
-    """
-    clean_nav(args.folder, args.depth, args.outlier)
+    make_timelapse(args.folder, args.time_display, args.time_format, args.time_round, 
+                    args.time_offset, args.fps, args.fontScale, args.logo, args.caption)
 
 
 def main(args=None):
@@ -376,34 +371,32 @@ def main(args=None):
     # Generate timelapse video from images
     subparser_maketimelapse = subparsers.add_parser(
         'timelapse', help="Generate timelapse video from images")
-    subparser_maketimelapse.add_argument('-f', '--folder', default="fovs",
+    subparser_maketimelapse.add_argument('-s', '--folder', default="fovs",
         help="Path to a folder where .jpg images are stored. Default 'fovs'.")
-    subparser_maketimelapse.add_argument('-t', '--time_format', default="%Y/%m/%d %Hh",
-        help="Format how the timestamp will be writen on the video. Default '%%Y/%%m/%%d %%Hh'.")
-    subparser_maketimelapse.add_argument('-o', '--time_offset', type=float,
-        help="If set, the datetime will display as elepsed days from the first image. \
-            In this case, the 'time_format' argument is ignored. If higher than 0, the number \
-            will offset the initial counter on X number of days.")
-    subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
+    subparser_maketimelapse.add_argument('-t', '--time_display', default="elapsed",
+            help="How to print the time on the frame. 'elapsed' will display as elapsed time since first \
+        frame, offset by 'time_offset'. 'current' will display the current real time of the frame. \
+        'none' will not display time.")
+    subparser_maketimelapse.add_argument('-r', '--time_round',
+            help="Frequency string indicating the rounding resolution of the displayed timestamp. \
+        Passed to pandas.Timedelta.round or pandas.Timestamp.round. Default no rounding is performed.")
+    subparser_maketimelapse.add_argument('-f', '--time_format',
+        help="Format how the timestamp will be writen on the video. For time_display='current', check formating \
+        options for 'strftime'. For time_display='elapsed', options are %%y %%m %%w %%d %%H %%M %%S for years, months, \
+        weeks, days, hours, minutes, seconds. Default '%%Y/%%m/%%d %%Hh' if time_display='current', and '%%d days %%{H}h' \
+        if time_display='elapsed'")
+    subparser_maketimelapse.add_argument('-o', '--time_offset', default=0,
+        help="Offset the time displayed in the frame if time_display='elapsed'. \
+        Passed to pd.to_timedelta, check it's documentation for options.")
+    subparser_maketimelapse.add_argument('-p', '--fps', type=float, default=10,
         help="Timelapse video FPS. Default 10.")
-    subparser_maketimelapse.add_argument('-s', '--fontScale', type=float, default=1,
+    subparser_maketimelapse.add_argument('-e', '--fontScale', type=float, default=1,
         help="Font scale for the timestamp. Default 1.")
     subparser_maketimelapse.add_argument('-l', '--logo', action="store_true",
         help="Include ONC logo on the video.")
     subparser_maketimelapse.add_argument('-c', '--caption',
         help="Insert a caption at the bottom of the screen.")
     subparser_maketimelapse.set_defaults(func=fmaketimelapse)
-
-    # Clean navigational data
-    subparser_navclean = subparsers.add_parser(
-        'cleannav', help="Clean navigational data")
-    subparser_navclean.add_argument('-f', '--folder', default="output",
-        help="Path to a folder where .csv files are stored. Default 'output'.")
-    subparser_navclean.add_argument('-d', '--depth', type=float, default=5,
-        help="Only keep depths lower than this threshold. Default 5 m.")
-    subparser_navclean.add_argument('-o', '--outlier', action="store_true",
-        help="Remove coordinates that are far away from the median.")
-    subparser_navclean.set_defaults(func=fnavclean)
 
     args = parser.parse_args(args)
     args.func(args)

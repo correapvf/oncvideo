@@ -13,6 +13,7 @@ Avaiable commands include:
 * tomp4 - Convert video to mp4 format
 * extframe - Extract frames from video files
 * extfov - Extract FOVs (frames or videos) from video files
+* make_timelapse - Generate timelapse video from images
 * downloadTS - Download time series data
 * mergeTS - Merge time series data based on the closest timestamps
 * downloadST - Download video from Seatube link
@@ -21,9 +22,10 @@ Avaiable commands include:
 
 ## Installation
 ```
-pip install git+https://github.com/correapvf/oncvideo
+pip install ONCvideo
 ```
-FFmpeg must be installed and accessible via the `$PATH` environment variable.
+> Before using `ONCvideo`, FFmpeg must be installed and accessible via the `$PATH` environment variable.
+Check https://ffmpeg.org/download.html on details how to install, or use your package manager of choice (e.g. `sudo apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, `winget install ffmpeg` on Windows).
 
 ## Docs
 
