@@ -8,7 +8,7 @@ oncvideo
 
 A collection of commands to help get archived videos from Oceans 3.
 
-*GitHub:* https://github.com/correapvf/oncvideo
+**GitHub:** https://github.com/correapvf/oncvideo
 
 .. toctree::
    :maxdepth: 2
