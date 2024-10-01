@@ -180,9 +180,12 @@ def main(args=None):
         help="Only used for locationCode. Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' \
         for ROVs. 'ask' will list avaiable options and ask user to choose one. Default 'VIDEOCAM'")
     subparser_list.add_argument('-from',
-        '--dateFrom', help='Return videos after specified time, as yyyy-mm-ddTHH:MM:SS.sssZ')
+        '--dateFrom', help='Return videos after specified datetime. Can be any format that is parsed \
+        by pandas.to_datetime. If None, will search all videos since the device \
+        was first deployed.')
     subparser_list.add_argument('-to',
-        '--dateTo', help='Return videos before specified time, as yyyy-mm-ddTHH:MM:SS.sssZ')
+        '--dateTo', help='Return videos before specified datetime. Can be any format that is parsed \
+        by pandas.to_datetime. If None, will search all videos until the current date.')
     subparser_list.add_argument('-q', '--quality', default='ask',
         help="Quality of the videos to use. Usually should be LOW, 1500, 5000, UHD. 'ask' will \
         list avaiable options and ask user to choose one. 'all' will get all avaiable videos.")
@@ -323,7 +326,7 @@ def main(args=None):
     subparser_downloadts.add_argument('-p', '--options', default="fixed",
         help="Set options for search querry. If 'fixed', return clean resampled data \
         for every minute, and maximum gap of one day between queries. \
-        If 'rov', return raw not resampled data, and set a maximum gap of one hour between queries.")
+        If 'rov', return raw (not resampled) data, and set a maximum gap of one hour between queries.")
     subparser_downloadts.set_defaults(func=fdownloadts)
 
     # merge time series
