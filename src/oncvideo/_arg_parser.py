@@ -145,8 +145,16 @@ def fmaketimelapse(args):
     """
     run make_timelapse function
     """
-    make_timelapse(args.folder, args.time_display, args.time_format, args.time_round, 
-                    args.time_offset, args.fps, args.fontScale, args.logo, args.caption)
+    def point2int(point):
+        if point is not None:
+            point = point.split(',')
+            point = [int(x) for x in point]
+        return point
+
+    args.time_xy = point2int(args.time_xy)
+    args.caption_xy = point2int(args.caption_xy)
+    make_timelapse(args.folder, args.time_display, args.time_format, args.time_offset,
+                    args.fps, args.fontScale, args.logo, args.caption, args.time_xy, args.caption_xy)
 
 
 def main(args=None):
@@ -380,9 +388,6 @@ def main(args=None):
             help="How to print the time on the frame. 'elapsed' will display as elapsed time since first \
         frame, offset by 'time_offset'. 'current' will display the current real time of the frame. \
         'none' will not display time.")
-    subparser_maketimelapse.add_argument('-r', '--time_round',
-            help="Frequency string indicating the rounding resolution of the displayed timestamp. \
-        Passed to pandas.Timedelta.round or pandas.Timestamp.round. Default no rounding is performed.")
     subparser_maketimelapse.add_argument('-f', '--time_format',
         help="Format how the timestamp will be writen on the video. For time_display='current', check formating \
         options for 'strftime'. For time_display='elapsed', options are %%y %%m %%w %%d %%H %%M %%S for years, months, \
@@ -391,7 +396,7 @@ def main(args=None):
     subparser_maketimelapse.add_argument('-o', '--time_offset', default=0,
         help="Offset the time displayed in the frame if time_display='elapsed'. \
         Passed to pd.to_timedelta, check it's documentation for options.")
-    subparser_maketimelapse.add_argument('-p', '--fps', type=float, default=10,
+    subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
         help="Timelapse video FPS. Default 10.")
     subparser_maketimelapse.add_argument('-e', '--fontScale', type=float, default=1,
         help="Font scale for the timestamp. Default 1.")
@@ -399,6 +404,10 @@ def main(args=None):
         help="Include ONC logo on the video.")
     subparser_maketimelapse.add_argument('-c', '--caption',
         help="Insert a caption at the bottom of the screen.")
+    subparser_maketimelapse.add_argument('--time_xy',
+        help="Coordinates of the bottom-left corner of the time text. Must be two ints separated by comma")
+    subparser_maketimelapse.add_argument('--caption_xy',
+        help="Coordinates of the bottom-left corner of the caption. Must be two ints separated by comma.")
     subparser_maketimelapse.set_defaults(func=fmaketimelapse)
 
     args = parser.parse_args(args)

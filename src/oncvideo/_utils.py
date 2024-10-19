@@ -22,6 +22,14 @@ def strfdelta(tdelta, fmt):
     d = {}
     l = {'y': 31536000, 'm': 2592000, 'w': 604800,'d': 86400, 'H': 3600, 'M': 60, 'S': 1}
     f = {'y': '{:d}', 'm': '{:d}', 'w': '{:d}', 'd': '{:d}', 'H': '{:02d}', 'M': '{:02d}', 'S': '{:02d}'}
+
+    # round timedelta
+    r = {'d': 'd', 'H': 'h', 'M': 'min', 'S': 's'}
+    for k in ('S', 'M', 'H', 'd'):
+        if f"%{k}" in fmt or f"%{{{k}}}" in fmt:
+            tdelta = tdelta.round(r[k])
+            break
+
     rem = int(tdelta.total_seconds())
 
     for k in ('y', 'm', 'w', 'd', 'H', 'M', 'S' ):
@@ -195,7 +203,7 @@ def parse_file_path(source, need_filename=True):
         if '*' in source:
             #
             directory = path.parent
-            p = list(directory.rglob(path.name))
+            p = sorted(directory.rglob(path.name))
 
             if len(p) == 0:
                 raise ValueError("No files found matching file pattern.")

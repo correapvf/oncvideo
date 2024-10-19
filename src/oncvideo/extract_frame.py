@@ -138,7 +138,7 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
     if fov_csv:
         df['fovs'] = df['fovs'].str.split(',')
-        df['fovs'].apply(lambda x: [to_timedelta(y) for y in x])
+        df['fovs'] = df['fovs'].apply(lambda x: [to_timedelta(y) if y != '' else '' for y in x])
 
         df['subfolder'] = df['fovs'].apply(lambda x: [f'FOV{y+1}' for y in list(range(len(x)))])
         maxfov = df['fovs'].apply(len).max()
@@ -253,7 +253,8 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
 
 
 
-def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time_round=None, time_offset=0, fps=10, fontScale=1, logo=False, caption=None):
+def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time_offset=0, fps=10,
+    fontScale=1, logo=False, caption=None, time_xy=None, caption_xy=None):
     """
     Generate timelapse video from images
 
@@ -269,9 +270,6 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
         Format how the timestamp will be writen on the video. For time_display='current', check formating options for
         'strftime'. For time_display='elapsed', options are %y %m %w %d %H %M %S for years, months,
         weeks, days, hours, minutes, seconds.
-    time_round : str, default None
-        Frequency string indicating the rounding resolution of the displayed timestamp.
-        Passed to pandas.Timedelta.round or pandas.Timestamp.round
     time_offset : str, timedelta or float, default 0
         Offset the time displayed in the frame if time_display='elapsed'.
         Passed to pd.to_timedelta, check it's documentation for options.
@@ -283,6 +281,11 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
         Include ONC logo on the video?
     caption : str, default None
         Insert a caption at the bottom of the screen. You can break lines with <br> tag.
+    time_xy : tuple of 2 ints, default None
+        Coordinates of the bottom-left corner of the time text. X is the distance (in pixels) from the left edge and
+        Y is the distance from the top edge of the image. Default will draw in the top-left corner.
+    caption_xy : tuple of 2 int, default None
+        Coordinates of the bottom-left corner of the first line of the caption. Default will draw in the bottom corner.
     """
     folder = Path(folder)
 
@@ -305,7 +308,7 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
 
     for f in tqdm(fu, desc='Processed folders'):
         images = f.glob("*.jpg")
-        images = list(images)
+        images = sorted(images)
         if len(images) < 1:
             continue
 
@@ -316,7 +319,7 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
         vidwriter = cv2.VideoWriter(output_video, cv2.VideoWriter_fourcc(*"mp4v"), fps, video_dim)
 
         spacing = img.shape[0] // 40 # 2.5% of the image size
-        ctxt = (spacing, spacing+int(22*fontScale))
+        ctxt = (spacing, spacing+int(22*fontScale)) if time_xy is None else tuple(time_xy)
         font = cv2.FONT_HERSHEY_SIMPLEX
 
         if logo:
@@ -344,12 +347,8 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
 
                 if time_display == 'elapsed':
                     timedelta = timestamp - timestamp0 + time_offset
-                    if time_round is not None:
-                        timedelta = timedelta.round(time_round)
                     timestamp = strfdelta(timedelta, time_format)
                 else:
-                    if time_round is not None:
-                        timedelta = timedelta.round(time_round)
                     timestamp = timestamp.strftime(time_format)
 
                 # Using cv2.putText() method
@@ -357,10 +356,10 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
                                 fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
 
             if caption is not None:
-                textY = img.shape[0]-spacing
+                textY = img.shape[0]-spacing if caption_xy is None else caption_xy[1]
                 for line in reversed(caption.split('<br>')):
                     textsize = cv2.getTextSize(line, font, fontScale, thickness=2)[0]
-                    textX = (img.shape[1] - textsize[0]) // 2
+                    textX = (img.shape[1] - textsize[0]) // 2 if caption_xy is None else caption_xy[0]
                     img = cv2.putText(img, line, org=(textX, textY), fontFace=font,
                                 fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
                     textY = textY - textsize[1] - spacing
