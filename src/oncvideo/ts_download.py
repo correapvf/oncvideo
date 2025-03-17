@@ -4,7 +4,7 @@ from time import sleep
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import pandas as pd
 from ._utils import parse_file_path, make_names, create_error_message
 from .utils import name_to_timestamp_dc

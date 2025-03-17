@@ -3,7 +3,7 @@ from urllib.parse import urlparse, parse_qs
 import json
 import requests
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from .utils import name_to_timestamp, name_to_timestamp_dc
 from ._utils import parse_file_path, URL, strftd2
 from .dives_onc import get_dives

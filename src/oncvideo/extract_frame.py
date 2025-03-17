@@ -2,11 +2,11 @@
 
 from pathlib import Path
 import tempfile
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import pandas as pd
 import cv2
-from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg, LOGO, strfdelta
+from ._utils import download_file, to_timedelta, strftd2, parse_file_path, run_ffmpeg
 from .utils import name_to_timestamp
 from ._iterate_ffmpeg import iterate_ffmpeg, iterate_init
 
@@ -107,7 +107,7 @@ def extract_frame(source, interval, output='frames', trim=False,
     iterate_ffmpeg(source, output, header, trim, _ffmpeg_run_frame, params)
 
 
-def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterlace=False):
+def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=None, output='fovs', deinterlace=False):
     """
     Extract FOVs from videos
 
@@ -123,9 +123,13 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
         Can be a float indicating the number of seconds or a string in the format
         mm:ss.f, from the start of the video. If None (the default), it will try to
         get the timestamps from the column 'fovs' in the source.
+    clip_or_sharpest : {'sharpest', 'clip'}
+        If 'clip', the function will save clips instead of framegrabs, with
+        duration given in seconds. The start of the clips are given by 'timestamps'.
+        If 'sharpest', will save the sharpest frame only within the clip.
+        This argument is ignored if duration is None.
     duration : float
-        If provided, the function will get clips instead of framegrabs, with
-        duration given in seconds. The start of the clips are given by 'timestamps'. 
+        The duration of the FOVs, given in seconds or mm:ss.f format.
     output : str, default 'fovs'
         Name of the output folder to save images/videos.
     deinterlace : bool, default False
@@ -166,8 +170,17 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
     else:
         vf_cmd = []
 
-    if duration == 'None':
-        duration = None
+    if duration is not None:
+        duration = str(duration)
+
+        match clip_or_sharpest:
+            case 'clip':
+                sharpest = False
+            case 'sharpest':
+                sharpest = True
+            case _:
+                raise ValueError("'clip_or_sharpest' must be a string either 'clip' or 'sharpest'")
+
 
     # start for loop
     pbar = tqdm(total=df.shape[0], desc = 'Processed files')
@@ -227,13 +240,27 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
                         ff_cmd = ['ffmpeg', '-ss', fov_str, '-i',
                             tmpfile_str] + vf_cmd + ['-frames:v', '1', '-update', '1',
                             '-qmin', '1', '-q:v', '1', new_name]
+                        run_ffmpeg(ff_cmd, filename=new_name.name)
 
                     else:
                         new_name = outfolder / p / new_name_p
                         ff_cmd =['ffmpeg', '-ss', fov_str,
                             '-i', tmpfile_str, '-t', duration, '-c', 'copy', new_name]
+                        run_ffmpeg(ff_cmd, filename=new_name.name)
+                        
+                        if sharpest:
+                            sharpest_frame, time = extract_sharpest_frame(str(new_name))
+                            new_name.unlink()
 
-                    run_ffmpeg(ff_cmd, filename=new_name.name)
+                            if sharpest_frame is not None:
+
+                                newtime = (timestamp + fov + time).strftime('%Y%m%dT%H%M%S.%f')[:-3]
+                                filename = f"{oldname_dc}_{newtime}Z.jpg"
+                                new_name = outfolder / p / Path(filename)
+
+                                cv2.imwrite(str(new_name), sharpest_frame, [cv2.IMWRITE_JPEG_QUALITY, 100])
+                            
+
                     filename_fovs.append(new_name.name)
 
                 if need_download:
@@ -252,125 +279,46 @@ def extract_fov(source, timestamps=None, duration=None, output='fovs', deinterla
         f.close()
 
 
-
-def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time_offset=0, fps=10,
-    fontScale=1, logo=False, caption=None, time_xy=None, caption_xy=None):
+def extract_sharpest_frame(video_path, brt_thr=50):
     """
-    Generate timelapse video from images
-
-    Parameters
-    ----------
-    folder : str, default 'fovs'
-        Path to a folder where .jpg images are stored.
-    time_display : {'elapsed', 'current', 'none'}
-        How to print the time on the frame. 'elapsed' will display as elapsed time since first
-        frame, offset by 'time_offset'. 'current' will display the current real time of the frame.
-        'none' will not display time.
-    time_format : str, default '%Y/%m/%d %Hh' if time_display='current', and '%d days %{H}h' if time_display='elapsed'
-        Format how the timestamp will be writen on the video. For time_display='current', check formating options for
-        'strftime'. For time_display='elapsed', options are %y %m %w %d %H %M %S for years, months,
-        weeks, days, hours, minutes, seconds.
-    time_offset : str, timedelta or float, default 0
-        Offset the time displayed in the frame if time_display='elapsed'.
-        Passed to pd.to_timedelta, check it's documentation for options.
-    fps : float, default 10
-        Timelapse video FPS.
-    fontScale : float, default 1
-        Font scale for the timestamp. Increase values for a larger font size.
-    logo : bool, default False
-        Include ONC logo on the video?
-    caption : str, default None
-        Insert a caption at the bottom of the screen. You can break lines with <br> tag.
-    time_xy : tuple of 2 ints, default None
-        Coordinates of the bottom-left corner of the time text. X is the distance (in pixels) from the left edge and
-        Y is the distance from the top edge of the image. Default will draw in the top-left corner.
-    caption_xy : tuple of 2 int, default None
-        Coordinates of the bottom-left corner of the first line of the caption. Default will draw in the bottom corner.
+    Select the frame with highest sharpness from a video
+    Also excludes black frames, with median brightness below brt_thr
+    Return the selected frame and time, in seconds, where the frame was
     """
-    folder = Path(folder)
+    cap = cv2.VideoCapture(video_path)
 
-    fu = [f for f in folder.iterdir() if f.is_dir()]
-    fu += [folder]
+    fps = cap.get(cv2.CAP_PROP_FPS)  # Get frame rate
+    
+    if not cap.isOpened():
+        return
 
-    if logo:
-        logoimg = cv2.imdecode(np.frombuffer(LOGO, np.uint8), cv2.IMREAD_COLOR)
+    sharpest_frame = None
+    max_sharpness = 0
+    count = 0
+    frame_number = 0
 
-    if time_display not in ['elapsed', 'current', 'none']:
-        raise ValueError("'time_display' must be one of 'elapsed', 'current' or 'none'")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break  # Exit when video ends
 
-    do_time = False if time_display == 'none' else True
+        # Convert to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    if do_time:
-        time_offset = pd.to_timedelta(time_offset)
-
-        if time_format is None:
-            time_format = '%Y/%m/%d %Hh' if time_display == 'current' else '%d days %{H}h'
-
-    for f in tqdm(fu, desc='Processed folders'):
-        images = f.glob("*.jpg")
-        images = sorted(images)
-        if len(images) < 1:
+        if np.median(gray) < brt_thr:
             continue
 
-        imgfile = images[0]
-        img = cv2.imread(str(imgfile), cv2.IMREAD_GRAYSCALE)
-        video_dim = img.shape[::-1]
-        output_video = f.name + '.mp4'
-        vidwriter = cv2.VideoWriter(output_video, cv2.VideoWriter_fourcc(*"mp4v"), fps, video_dim)
+        # Compute Laplacian variance (sharpness)
+        sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
 
-        spacing = img.shape[0] // 40 # 2.5% of the image size
-        ctxt = (spacing, spacing+int(22*fontScale)) if time_xy is None else tuple(time_xy)
-        font = cv2.FONT_HERSHEY_SIMPLEX
+        # Keep the sharpest frame
+        if sharpness > max_sharpness:
+            max_sharpness = sharpness
+            frame_number = count
+            sharpest_frame = frame.copy()
+        
+        count += 1
 
-        if logo:
-            size_logo = img.shape[0] // 7 # 7.5% of the image size
-            logo_resize = cv2.resize(logoimg, (size_logo,size_logo), interpolation=cv2.INTER_LINEAR)
+    cap.release()
 
-            # top right corner
-            top_y = spacing
-            left_x = img.shape[1] - spacing - size_logo
-            bottom_y = spacing + size_logo
-            right_x = img.shape[1] - spacing
-
-        if do_time:
-            timestamp0 = name_to_timestamp(imgfile.name)
-
-
-        # Start loop for each image
-        for imgfile in tqdm(images, leave=False):
-
-            img = cv2.imread(str(imgfile), cv2.IMREAD_COLOR)
-
-            # format timestamp of time lapsed string
-            if do_time:
-                timestamp = name_to_timestamp(imgfile.name)
-
-                if time_display == 'elapsed':
-                    timedelta = timestamp - timestamp0 + time_offset
-                    timestamp = strfdelta(timedelta, time_format)
-                else:
-                    timestamp = timestamp.strftime(time_format)
-
-                # Using cv2.putText() method
-                img = cv2.putText(img, timestamp, org=ctxt, fontFace=font,
-                                fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
-
-            if caption is not None:
-                textY = img.shape[0]-spacing if caption_xy is None else caption_xy[1]
-                for line in reversed(caption.split('<br>')):
-                    textsize = cv2.getTextSize(line, font, fontScale, thickness=2)[0]
-                    textX = (img.shape[1] - textsize[0]) // 2 if caption_xy is None else caption_xy[0]
-                    img = cv2.putText(img, line, org=(textX, textY), fontFace=font,
-                                fontScale=fontScale, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
-                    textY = textY - textsize[1] - spacing
-
-            # insert logo
-            if logo:
-                # destination = img[top_y:bottom_y, left_x:right_x]
-                # result = cv2.addWeighted(destination, 1, logo_resize, 0.5, 0)
-                # img[top_y:bottom_y, left_x:right_x] = result
-                img[top_y:bottom_y, left_x:right_x] = logo_resize
-
-            vidwriter.write(img)
-
-        vidwriter.release()
+    return sharpest_frame, frame_number / fps

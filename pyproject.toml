@@ -14,7 +14,7 @@ dependencies = [
   "ffmpeg_progress_yield",
   "opencv-python"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
   {name = "Paulo Correa", email = "pcorrea@oceannetworks.ca"}
 ]

@@ -2,11 +2,13 @@
 import argparse
 from pathlib import Path
 from .utils import onc
+from ._utils import strftd
 from .list_files import list_file, list_file_batch
 from .dives_onc import get_dives
 from .video_info import video_info
 from .didson_file import didson_info
-from .extract_frame import extract_frame, extract_fov, make_timelapse
+from .extract_frame import extract_frame, extract_fov
+from .timelapse import make_timelapse, align_frames
 from .download_files import download_files, to_mp4
 from .ts_download import download_ts, merge_ts
 from .seatube import download_st, link_st, rename_st
@@ -21,6 +23,8 @@ def flist(args):
         locationCode=args.locationCode, dive=args.dive, deviceCategoryCode=args.deviceCategoryCode,
         dateFrom=args.dateFrom, dateTo=args.dateTo, quality=args.quality,
         extension=args.extension, statistics=args.statistics)
+    if args.statistics:
+        df['duration'] = df['duration'].dt.total_seconds().apply(strftd)
     df.to_csv(args.output, index=False)
 
 
@@ -31,6 +35,8 @@ def fbatch(args):
     onc_ob = onc(args.token)
     df = list_file_batch(onc_ob, args.csvfile, quality=args.quality, extension=args.extension,
                          statistics=args.statistics)
+    if args.statistics:
+        df['duration'] = df['duration'].dt.total_seconds().apply(strftd)
     df.to_csv(args.output, index=False)
 
 
@@ -87,8 +93,8 @@ def fextfov(args):
     """
     if args.timestamps is not None:
         args.timestamps = args.timestamps.split(",")
-    extract_fov(args.source, args.timestamps, args.duration,
-                args.output, args.deinterlace)
+    extract_fov(args.source, args.timestamps, args.clip_or_sharpest,
+                args.duration, args.output, args.deinterlace)
 
 
 def fdownloadts(args):
@@ -156,6 +162,12 @@ def fmaketimelapse(args):
     make_timelapse(args.folder, args.time_display, args.time_format, args.time_offset,
                     args.fps, args.fontScale, args.logo, args.caption, args.time_xy, args.caption_xy)
 
+def falign(args):
+    """
+    align images
+    """
+    align_frames(args.folder, args.reference, args.warp_mode, args.epsilon, args.max_iterations)
+
 
 def main(args=None):
     """
@@ -186,7 +198,7 @@ def main(args=None):
 
     subparser_list.add_argument('-dcc', '--deviceCategoryCode', default='VIDEOCAM',
         help="Only used for locationCode. Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' \
-        for ROVs. 'ask' will list avaiable options and ask user to choose one. Default 'VIDEOCAM'")
+        for ROVs. 'ask' will list available options and ask user to choose one. Default 'VIDEOCAM'")
     subparser_list.add_argument('-from',
         '--dateFrom', help='Return videos after specified datetime. Can be any format that is parsed \
         by pandas.to_datetime. If None, will search all videos since the device \
@@ -196,10 +208,10 @@ def main(args=None):
         by pandas.to_datetime. If None, will search all videos until the current date.')
     subparser_list.add_argument('-q', '--quality', default='ask',
         help="Quality of the videos to use. Usually should be LOW, 1500, 5000, UHD. 'ask' will \
-        list avaiable options and ask user to choose one. 'all' will get all avaiable videos.")
+        list available options and ask user to choose one. 'all' will get all available videos.")
     subparser_list.add_argument('-ext', '--extension', default="mp4",
-        help="File extension to search. Deapult to 'mp4'. 'ask' will list \
-        avaiable options and ask user to choose one. 'all' will get all avaiable videos.")
+        help="File extension to search. Default to 'mp4'. 'ask' will list \
+        available options and ask user to choose one. 'all' will get all available videos.")
     subparser_list.add_argument('-s', '--statistics', action="store_false",
         help='Do not save video durations and file sizes.')
 
@@ -212,14 +224,14 @@ def main(args=None):
         'blist', help="List video files based on parameters stored in a csv file.")
     subparser_blist.add_argument('-t', '--token', help='API token')
     subparser_blist.add_argument(
-        'csvfile', help='Csv file with arguments to interate')
+        'csvfile', help='Csv file with arguments to iterate')
 
     subparser_blist.add_argument('-q', '--quality', default='ask',
         help="Quality of the videos to use. Usually should be LOW, 1500, 5000, UHD. 'ask' will \
-        list avaiable options and ask user to choose one. 'all' will get all avaiable videos.")
+        list available options and ask user to choose one. 'all' will get all available videos.")
     subparser_blist.add_argument('-ext', '--extension', default="mp4",
-        help="File extension to search. Deapult to 'mp4'. 'ask' will list \
-        avaiable options and ask user to choose one. 'all' will get all avaiable videos.")
+        help="File extension to search. Default to 'mp4'. 'ask' will list \
+        available options and ask user to choose one. 'all' will get all available videos.")
     subparser_blist.add_argument('-s', '--statistics', action="store_false",
         help='Do not save video durations and file sizes.')
     subparser_blist.add_argument('-k', '--keep', action="store_true",
@@ -262,7 +274,7 @@ def main(args=None):
     subparser_download.add_argument('-o', '--output', default="output",
         help="Folder to download files. Default 'output'")
     subparser_download.add_argument('-t', '--trim', action="store_true",
-        help='Trim video files to match the initial seach query.')
+        help='Trim video files to match the initial search query.')
     subparser_download.set_defaults(func=fdownload)
 
     # Convert to mp4
@@ -299,7 +311,7 @@ def main(args=None):
     subparser_extframe.add_argument('-d', '--deinterlace', action="store_true",
         help='Deinterlace video. Default to False.')
     subparser_extframe.add_argument('-n', '--rounding_near', action="store_true",
-        help='Use ffmpeg deafult Timestamp rounding method (near) for fps filter.\
+        help='Use ffmpeg default Timestamp rounding method (near) for fps filter.\
         Default to False (stills start in the beginning of the video).')
     subparser_extframe.set_defaults(func=fextframe)
 
@@ -310,10 +322,12 @@ def main(args=None):
     subparser_extframe.add_argument('-s', '--timestamps',
         help="Get frames at the specific timestamps, in seconds or mm:ss.f format.\
         Can be a comma separated list to extract multiple FOVs.\
-        If 'durations' is suplied, will extract videos starting at each timestamp.")
+        If 'durations' is suplied, will extract clips starting at each timestamp.")
+    subparser_extframe.add_argument('-c', '--clip_or_sharpest', default='sharpest',
+        help=" Either 'clip' or 'sharpest'. If 'clip', the function will save clips instead of framegrabs,\
+        If 'sharpest', will save the sharpest frame only within the clip.")
     subparser_extframe.add_argument('-t', '--duration', required=False,
-        help="Duration of the video to download. in seconds or mm:ss.f format.\
-        Can be a single value or a comma separeted list, same size as 'timestamps'.")
+        help="Duration of the FOVs to download, in seconds or mm:ss.f format.")
     subparser_extframe.add_argument('-o', '--output', default="fovs",
         help="Folder to download files. Default 'fovs'")
     subparser_extframe.add_argument('-d', '--deinterlace', action="store_true",
@@ -382,7 +396,7 @@ def main(args=None):
     # Generate timelapse video from images
     subparser_maketimelapse = subparsers.add_parser(
         'timelapse', help="Generate timelapse video from images")
-    subparser_maketimelapse.add_argument('-s', '--folder', default="fovs",
+    subparser_maketimelapse.add_argument('folder', default="fovs",
         help="Path to a folder where .jpg images are stored. Default 'fovs'.")
     subparser_maketimelapse.add_argument('-t', '--time_display', default="elapsed",
             help="How to print the time on the frame. 'elapsed' will display as elapsed time since first \
@@ -409,6 +423,24 @@ def main(args=None):
     subparser_maketimelapse.add_argument('--caption_xy',
         help="Coordinates of the bottom-left corner of the caption. Must be two ints separated by comma.")
     subparser_maketimelapse.set_defaults(func=fmaketimelapse)
+
+
+    # Align frames
+    subparser_align = subparsers.add_parser(
+        'align', help="Align frames")
+    subparser_align.add_argument('folder', default="fovs",
+        help="Path to a folder where .jpg images are stored. Default 'fovs'.")
+    subparser_align.add_argument('-r', '--reference', default="middle",
+        help="Define the reference frame which other frames will be aligned to. Can be \
+            'first', 'middle', 'last' or filename of the image to be used. Default 'middle'.")
+    subparser_align.add_argument('-w', '--warp_mode', choices=['affine', 'perspective'], default="perspective",
+        help="affine - allows translation, rotation and scale transformations. \
+            perspective - allows perspective transformations, including the ones in affine. Default 'perspective'.")
+    subparser_align.add_argument('-e', '--epsilon', type=float, default=1e-6,
+        help="Minimum acceptable error difference between iterations. Default 1e-6.")
+    subparser_align.add_argument('-i', '--max_iterations', type=int, default=3000,
+        help="Maximum number of times the algorithm updates the transformation matrix. Default 3000.")
+    subparser_align.set_defaults(func=falign)
 
     args = parser.parse_args(args)
     args.func(args)

@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import requests
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from ._utils import parse_file_path, strftd
 

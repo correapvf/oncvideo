@@ -169,7 +169,6 @@ def _list_file_helper(df, statistics, extension, quality, cols_to_keep):
         print('Total file size: ', sizeof_fmt(df['fileSize'].sum()))
         df['fileSize'] = df['fileSize'] * 9.5367431640625e-07
         df.rename(columns={'fileSize': 'fileSizeMB'}, inplace=True)
-        df['duration'] = df['duration'].dt.total_seconds().apply(strftd)
         df['year'] = df['dateFrom'].dt.year
         df['month'] = df['dateFrom'].dt.month
         df['day'] = df['dateFrom'].dt.day

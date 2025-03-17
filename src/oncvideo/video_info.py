@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import subprocess as sp
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from ._utils import strftd, parse_file_path
 
 def _meta_video(urlfile, check_interlaced):

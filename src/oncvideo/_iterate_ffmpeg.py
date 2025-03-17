@@ -2,7 +2,7 @@
 import tempfile
 from pathlib import Path
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from ._utils import download_file, trim_group, parse_file_path
 
 

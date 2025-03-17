@@ -6,7 +6,7 @@ import requests
 import numpy as np
 import pandas as pd
 import backoff
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from ffmpeg_progress_yield import FfmpegProgress
 from .utils import name_to_timestamp
 
@@ -174,6 +174,7 @@ def parse_file_path(source, need_filename=True):
     need_filename - check if dataFrame or csv have a filename column
     """
     if isinstance(source, pd.DataFrame):
+        source = source.copy()
         if need_filename:
             if not 'filename' in source.columns:
                 raise ValueError("Input csv must have column 'filename'")
