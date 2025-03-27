@@ -3,15 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-oncvideo
-========
-
-A collection of commands to help get archived videos from Oceans 3.
-
-**GitHub:** https://github.com/correapvf/oncvideo
+.. mdinclude:: ../../README.md
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    oncvideo
+
+**GitHub:** https://github.com/correapvf/oncvideo

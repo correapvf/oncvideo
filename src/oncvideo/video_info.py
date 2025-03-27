@@ -74,7 +74,7 @@ def video_info(source, output='video_info.csv', check_interlaced=False):
     ----------
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *)
+        match multiple files (use \*)
     output : str, default 'video_info.csv'
         Name of the csv file to save video information
     check_interlaced : bool, default False

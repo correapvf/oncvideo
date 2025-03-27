@@ -18,7 +18,8 @@ release = '1.3.6'
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
-              'sphinx_rtd_theme']
+              'sphinx_rtd_theme',
+              'sphinx_mdinclude']
 
 templates_path = ['_templates']
 exclude_patterns = []

@@ -134,7 +134,7 @@ def link_st(onc, source, dive=False):
         ONC class object
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *). If a DataFrame or a .csv file,
+        match multiple files (use \*). If a DataFrame or a .csv file,
         it must have a column 'filename' that follow the ONC convention
         or columns 'timestamp' and 'deviceCode'.
     dive : bool, default False

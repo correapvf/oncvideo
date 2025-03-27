@@ -138,7 +138,7 @@ def download_ts(onc, source, category_code, output='output', options='fixed'):
         ONC class object
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *). If a DataFrame or a .csv file,
+        match multiple files (use \*). If a DataFrame or a .csv file,
         it must have a column 'filename' that follow the ONC convention
         or columns 'timestamp' and 'deviceCode'.
     category_code : str or list
@@ -287,7 +287,7 @@ def merge_ts(source, ts_data, tolerance=15, data_search=False):
     ----------
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *). If a DataFrame or a .csv file,
+        match multiple files (use \*). If a DataFrame or a .csv file,
         must have a column 'filename' that follow the ONC convention
         or columns 'timestamp' and 'deviceCode'.
     ts_data : str

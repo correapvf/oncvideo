@@ -66,7 +66,7 @@ def extract_frame(source, interval, output='frames', trim=False,
     ----------
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *)
+        match multiple files (use \*)
     interval : float
         Interval, in seconds, to extract frames (e.g. a value of 10 will
         extract one frame every 10 seconds).
@@ -117,7 +117,7 @@ def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=N
     ----------
     source : str or pandas.DataFrame
         A pandas DataFrame, a path to .csv file, or a Glob pattern to
-        match multiple files (use *)
+        match multiple files (use \*)
     timestamps : str, float, or list
         A timestamp or a list of timestaps where the framegrabs will be extracted.
         Can be a float indicating the number of seconds or a string in the format
