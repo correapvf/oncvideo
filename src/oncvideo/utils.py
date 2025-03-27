@@ -23,7 +23,7 @@ def onc(token = None):
     token = token if token else os.getenv('ONC_API_TOKEN')
     if token is None:
         raise ValueError("No API credentials were provided!")
-    return ONC(token)
+    return ONC(token, showWarning=False)
 
 
 def name_to_timestamp(filename):

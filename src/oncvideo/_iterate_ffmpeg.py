@@ -20,7 +20,7 @@ def iterate_init(output, header, df, has_group):
     folder = Path(output)
     folder.mkdir(exist_ok=True)
 
-    # check if command has been started alread
+    # check if command has been started already
     output_pathlib = Path(output)
     file_out = output_pathlib / (output_pathlib.name + '.csv')
     if file_out.exists():

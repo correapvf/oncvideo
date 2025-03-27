@@ -7,8 +7,8 @@ class TestDives():
     def setup_class(self):
         parser([
                 "getDives",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "-o",
                 "tmp.csv"
               ])
@@ -36,8 +36,10 @@ class TestDownloadTssd():
         "downloadTS",
         "tests/videos_test.csv",
         "NAV,CTD",
-        "-t",
-        "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+        # "-t",
+        # "API key",
+        "-p",
+        "rov"
         ])
         parser([
                 "mergeTS",
@@ -48,23 +50,23 @@ class TestDownloadTssd():
 
     def test_shape(self):
         df = pd.read_csv("output/output.csv")
-        assert df.shape == (2, 6)
+        assert df.shape == (4, 6)
 
     def test_shape_merged(self):
-        assert self.df.shape == (4, 31)
+        assert self.df.shape == (4, 29)
 
     def test_nav(self):
-        assert not self.df['Longitude (deg)'].isnull().any()
+        assert not self.df['longitude_deg'].isnull().any()
 
     def test_ctd(self):
-        assert not self.df['Pressure (decibar)'].isnull().any()
+        assert not self.df['pressure_decibar'].isnull().any()
 
     def test_file_ctd(self):
-        p = Path('output/ROVData_Odysseus_ConductivityTemperatureDepth_20220729T053221Z_20220729T075227Z.csv')
+        p = Path('output/SBECTD19p7875_ODYSS_CTD_20220729T053221.000Z_20220729T065225.000Z.csv') # ROVData_Odysseus_ConductivityTemperatureDepth_20220729T053221Z_20220729T075227Z.csv
         assert p.is_file()
 
     def test_file_nav(self):
-        p = Path('output/ROVData_Odysseus_NavigationSystem_20220729T053221Z_20220729T075227Z.csv')
+        p = Path('output/ODYSSEUSROVNAV01_ODYSS_NAV_20220729T053221.000Z_20220729T065225.000Z.csv') # ROVData_Odysseus_NavigationSystem_20220729T053221Z_20220729T075227Z.csv
         assert p.is_file()
 
     def teardown_class(self):

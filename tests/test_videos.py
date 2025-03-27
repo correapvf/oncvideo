@@ -57,18 +57,20 @@ class TestTomp4():
         parser([
                 "tomp4",
                 "videos/VS000169/INSPACMINIZEUS4KCAMODYSSEUS_20220729T054221.000Z-1500.mp4",
+                "-o",
+                "output_mp4"
               ])
 
     def test_csv(self):
-        df = pd.read_csv("output/output.csv")
+        df = pd.read_csv("output_mp4/output_mp4.csv")
         assert df.shape == (1, 3)
 
     def test_file(self):
-        p = Path('output').glob('*.mp4')
+        p = Path('output_mp4').glob('*.mp4')
         assert len(list(p)) == 1
 
     def teardown_class(self):
-        shutil.rmtree("output")
+        shutil.rmtree("output_mp4")
 
 
 class TestInfo():

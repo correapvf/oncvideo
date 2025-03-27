@@ -12,8 +12,8 @@ def download_st(onc, url, ext='mov'):
     """
     Generate download link from Seatube
 
-    Generate download link for the correspoding video based on the Seatube link provided.
-    Useful for downloading the high-res video that is not avaiable in Seatube.
+    Generate download link for the corresponding video based on the Seatube link provided.
+    Useful for downloading the high-res video that is not available in Seatube.
     Only supports Seatube V3.
 
     Parameters
@@ -25,7 +25,7 @@ def download_st(onc, url, ext='mov'):
         `https://data.oceannetworks.ca/SeaTubeV3?resourceTypeId=600&resourceId=4371&time=2023-09-13T20:43:09.000Z`
         or csv file with 'seatube_link' column.
     ext : str, default mov
-        Especify a extension of the video to be downloaded.
+        Specify a extension of the video to be downloaded.
     """
     if url.endswith('.csv'):
         df = pd.read_csv(url)
@@ -34,19 +34,19 @@ def download_st(onc, url, ext='mov'):
         df['video_time'] = ''
         df['frame_filename'] = ''
 
-        for index, value in tqdm(urls.items(), tota=urls.shape[0]):
+        for index, value in tqdm(urls.items(), total=urls.shape[0]):
             urlfile, ss, new_name = _download_st_helper(value, ext, onc)
             df.loc[index, 'url'] = urlfile
             df.loc[index, 'video_time'] = ss
             df.loc[index, 'frame_filename'] = new_name
 
-        df.to_csv("videos_seatube.csv", index=False)
+        return df
 
     else:
         urlfile, ss, new_name = _download_st_helper(url, ext, onc)
-        print(urlfile)
-        print("Frame expected at ", ss)
-        print("File name for the frame: ", new_name)
+        return {'url': urlfile,
+                'video_time': ss,
+                'frame_filename': new_name}
 
 
 def _download_st_helper(url, ext, onc):
@@ -75,7 +75,7 @@ def _download_st_helper(url, ext, onc):
             'extension' : ext
         }
 
-    result = onc.getListByDevice(filters, allPages=True)
+    result = onc.getArchivefileByDevice(filters, allPages=True)
     result = result['files']
 
     df = pd.DataFrame({'filename': result})
@@ -125,7 +125,7 @@ def link_st(onc, source, dive=False):
     Generate Seatube link
 
     Generate a Seatube link from filenames following the Oceans 3 naming
-    convention (deviceCode_timestamp.ext). For now, only supports video avaiable
+    convention (deviceCode_timestamp.ext). For now, only supports video available
     in Seatube V3 (videos from ROV cameras).
 
     Parameters

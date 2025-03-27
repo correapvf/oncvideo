@@ -36,7 +36,7 @@ def _ask_options(results, ivalue, ihelp):
 def _ask_options_multiple(results, ivalue):
     """
     List option and ask user to select which result they want to keep
-    Allows multiple values to be choosen
+    Allows multiple values to be chosen
     """
     results = pd.concat([results, pd.Series([results.sum()], index=['all'])])
     input_message = f"Select a {ivalue}:\n"
@@ -146,7 +146,7 @@ def _list_file_helper(df, statistics, extension, quality, cols_to_keep):
             if 0 < nseconds < 1800: # 30 min * 60
                 query = f'end at {strftd(abs(nseconds))}'
             elif nseconds <= 0:
-                query = f'querry dateTo is before by {timediff * -1}'
+                query = f'query dateTo is before by {timediff * -1}'
             else:
                 query = f'gap dateTo of {timediff}'
             query0 = df.loc[group.index[-1],'query_offset']
@@ -192,7 +192,7 @@ def _list_file_dc(onc, deviceCode, dateFrom, dateTo, statistics):
             'returnOptions'  : returnOptions
         }
 
-    result = onc.getListByDevice(filters, allPages=True)
+    result = onc.getArchivefileByDevice(filters, allPages=True)
     return _api_to_df(result, dateFrom, dateTo, statistics)
 
 
@@ -216,7 +216,7 @@ def _list_file_lc(onc, locationCode, deviceCategoryCode,
         'returnOptions'     : returnOptions
     }
 
-    result = onc.getListByLocation(filters, allPages=True)
+    result = onc.getArchivefileByLocation(filters, allPages=True)
     return _api_to_df(result, dateFrom, dateTo, statistics)
 
 
@@ -236,26 +236,26 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
     """
     Get list of files archived in Oceans 3.0
 
-    Search archived files based on one of the following criterias: decideCode,
+    Search archived files based on one of the following criteria: decideCode,
     deviceId, locationCode and dive number. One of these parameters need to
-    be suplied to the function. 
+    be supplied to the function. 
 
     Parameters
     ----------
     onc : onc.ONC
         ONC class object
     deviceCode : str
-        Devide code to seach files
+        Device code to search files
     deviceId : str or int
-        Devide Id to seach files
+        Device Id to search files
     locationCode : str
-        Location code to seach files
+        Location code to search files
     dive : str
-        Dive number to seach files
+        Dive number to search files
     deviceCategoryCode : str, default VIDEOCAM
-        Device category code to search files. Only used when locationCode is suplied.
+        Device category code to search files. Only used when locationCode is supplied.
         Usually 'VIDEOCAM' for fixed cameras and 'ROV_CAMERA' for ROVs.
-        'ask' will list avaiable options and ask user to choose one.
+        'ask' will list available options and ask user to choose one.
     dateFrom : str or datetime
         Return videos after specified datetime. Can be any format that is parsed
         by pandas.to_datetime. If None, will search all videos since the device
@@ -265,12 +265,12 @@ def list_file(onc, deviceCode=None, deviceId=None, locationCode=None, dive=None,
         by pandas.to_datetime. If None, will search all videos until the current
         date.
     quality : str, default ask
-        Especify a quality to filter videos. Usually should be LOW, standard,
-        1500, 5000, UHD. 'ask' will list avaiable options and ask user to choose one.
-        'all' will get all avaiable videos. Accepts multiple values as comma separated.
+        Specify a quality to filter videos. Usually should be LOW, standard,
+        1500, 5000, UHD. 'ask' will list available options and ask user to choose one.
+        'all' will get all available videos. Accepts multiple values as comma separated.
     extension : str, default mp4
-        Especify a extension to filter videos. 'ask' will list avaiable options and
-        ask user to choose one. 'all' will get all avaiable videos.
+        Specify a extension to filter videos. 'ask' will list available options and
+        ask user to choose one. 'all' will get all available videos.
         Accepts multiple values as comma separated.
     statistics : bool, default True
         Also save video durations and file sizes.
@@ -331,11 +331,11 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
     List video files based on parameters stored in a csv file
 
     This function will execute multiple search for archived files based on parameters stored
-    in a csv file. Usefull to get videos from multiple sites and/or dives.
+    in a csv file. Useful to get videos from multiple sites and/or dives.
     Column names must be one of decideCode, deviceId, locationCode or dive.
     Csv may also include parameters dateFrom, dateTo, and deviceCategoryCode.
     Details on these parameters can be found in 'list_file' function. A column named 'group'
-    can also be used to distingshed each query in the final table.
+    can also be used to distinguish each query in the final table.
 
     Parameters
     ----------
@@ -344,12 +344,12 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
     csvfile : str, path object or file-like object
         Location to the input csv file.
     quality : str, default ask
-        Especify a quality to filter videos. Usually should be LOW, standard,
-        1500, 5000, UHD. 'ask' will list avaiable options and ask user to choose one.
-        'all' will get all avaiable videos. Accepts multiple values as comma separated.
+        Specify a quality to filter videos. Usually should be LOW, standard,
+        1500, 5000, UHD. 'ask' will list available options and ask user to choose one.
+        'all' will get all available videos. Accepts multiple values as comma separated.
     extension : str, default mp4
-        Especify a extension to filter videos. 'ask' will list avaiable options and
-        ask user to choose one. 'all' will get all avaiable videos.
+        Specify a extension to filter videos. 'ask' will list available options and
+        ask user to choose one. 'all' will get all available videos.
         Accepts multiple values as comma separated.
     statistics : bool, default True
         Also save video durations and file sizes.
@@ -398,9 +398,9 @@ def list_file_batch(onc, csvfile, quality='ask', extension='mp4', statistics=Tru
         cols = file.columns.to_list() # update
 
     if not 'dateFrom' in cols:
-        raise ValueError("'dateFrom' must be a column in the csv file (exept if 'dive' is provided).")
+        raise ValueError("'dateFrom' must be a column in the csv file (except if 'dive' is provided).")
     if not 'dateTo' in cols:
-        raise ValueError("'dateTo' must be a column in the csv file (exept if 'dive' is provided).")
+        raise ValueError("'dateTo' must be a column in the csv file (except if 'dive' is provided).")
 
     file['dateFrom'] = pd.to_datetime(file['dateFrom'], utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.%f').str[:-3]+'Z'
     file['dateTo'] = pd.to_datetime(file['dateTo'], utc=True).dt.strftime('%Y-%m-%dT%H:%M:%S.%f').str[:-3]+'Z'

@@ -35,7 +35,7 @@ def download_files(source, output='output', trim=False):
     output : str, default 'output'
         Name of the output folder to save converted videos
     trim : bool, default False
-        Trim video files to match the initial seach query
+        Trim video files to match the initial search query
     """
     if '*' in source:
         raise ValueError("Input must be a DataFrame or .csv with files to download.")
@@ -83,18 +83,18 @@ def to_mp4(source, output='output', trim=False, deinterlace=False, crf=None,
     output : str, default 'output'
         Name of the output folder to save converted videos
     trim : bool, default False
-        Trim video files to match the initial seach query
+        Trim video files to match the initial search query
     deinterlace : bool, default False
         Deinterlace video.
-    crf : int, defalt None
+    crf : int, default None
         Set CRF (quality level) in ffmpeg. The default will use the
         default value from ffmpeg.
     keep_audio : bool, default False
         Keep audio in the video? Default is to remove de audio.
-    yuv420 : bool, defalt False
+    yuv420 : bool, default False
         Force YUV planar color space with 4:2:0 chroma subsampling.
         May be needed to display video in some players/browsers.
-    h265 : bool, defalt False
+    h265 : bool, default False
         Use H.265 encoding instead of H.264. H.265 offers a higher
         compression, but may not be supported by some players/browsers.
     """

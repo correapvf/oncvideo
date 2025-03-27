@@ -6,8 +6,8 @@ class TestListDc():
     def setup_class(self):
         parser([
                 "list",
-                "-t"
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "-dc",
                 "AXISCAMB8A44F04DEEA",
                 "-from",
@@ -37,8 +37,8 @@ class TestListDive():
     def setup_class(self):
         parser([
                 "list",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "-dive",
                 "H1987",
                 "-s",
@@ -66,8 +66,8 @@ class TestListDi():
     def setup_class(self):
         parser([
                 "list",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "-di",
                 "23543",
                 "--quality",
@@ -98,8 +98,8 @@ class TestListLc():
     def setup_class(self):
         parser([
                 "list",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "-lc",
                 "BACAX",
                 "-from",
@@ -128,8 +128,8 @@ class TestBlistDive():
     def setup_class(self):
         parser([
                 "blist",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "tests/list_dive.csv",
                 "--extension",
                 "all",
@@ -166,8 +166,8 @@ class TestBlistLc():
     def setup_class(self):
         parser([
                 "blist",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "tests/list_lc.csv",
                 "--quality",
                 "standard",
@@ -197,8 +197,8 @@ class TestBlistDi():
     def setup_class(self):
         parser([
                 "blist",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "tests/list_di.csv",
                 "--quality",
                 "5000",
@@ -227,8 +227,8 @@ class TestBlistDc():
     def setup_class(self):
         parser([
                 "blist",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
+                # "-t",
+                # "API key",
                 "tests/list_dc.csv",
                 "-s",
                 "-o",

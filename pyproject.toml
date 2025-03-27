@@ -12,7 +12,8 @@ dependencies = [
   "onc",
   "backoff",
   "ffmpeg_progress_yield",
-  "opencv-python"
+  "opencv-python",
+  "ttf_opensans"
 ]
 requires-python = ">=3.10"
 authors = [

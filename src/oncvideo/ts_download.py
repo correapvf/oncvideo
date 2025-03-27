@@ -1,185 +1,132 @@
 """download NAV and CTD files from same site"""
 import re
-from time import sleep
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import requests
 from tqdm.auto import tqdm
 import pandas as pd
 from ._utils import parse_file_path, make_names, create_error_message
 from .utils import name_to_timestamp_dc
 
 
-def _download_ts_helper(df, onc, category_code, params, output, f, fo, nworkers):
+def _download_ts_helper(df, onc, category_code, params, output, f, fo):
     """
     Helper function to download time series data
     """
     # start for loop
-    nloop = 0
-    futures = []
+
+    dfg = df.groupby(['deviceCode', 'gap'])
+    nloop = dfg.ngroups * len(category_code)
     log = open(output / "log.txt", "w", encoding="utf-8")
 
-    with ThreadPoolExecutor(max_workers=nworkers) as executor:
+    for name, group in tqdm(dfg, total=nloop):
 
-        for name, group in df.groupby(['deviceCode', 'gap']):
+        date_from = group['timestamp'].iloc[0] - pd.Timedelta(10, "min")
+        date_from = date_from.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        date_to = group['timestamp'].iloc[-1] + pd.Timedelta(25, "min")
+        date_to = date_to.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
-            date_from = group['timestamp'].iloc[0] - pd.Timedelta(10, "min")
-            date_from = date_from.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-            date_to = group['timestamp'].iloc[-1] + pd.Timedelta(25, "min")
-            date_to = date_to.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        date_o_from = str(group['timestamp'].iloc[0])[:-6]
+        date_o_to = str(group['timestamp'].iloc[-1])[:-6]
 
-            date_o_from = str(group['timestamp'].iloc[0])[:-6]
-            date_o_to = str(group['timestamp'].iloc[-1])[:-6]
-
-            filters = {
-                        'deviceCode': name[0],
-                        'dateFrom'  : date_from,
-                        'dateTo'    : date_to
-                    }
-            result = onc.getLocations(filters)
+        filters = {
+                    'deviceCode': name[0],
+                    'dateFrom'  : date_from,
+                    'dateTo'    : date_to
+                }
+        result = onc.getLocations(filters)
 
 
-            # sanity check. Only one locationCode should be retrieved
-            if len(result) > 1:
-                raise RuntimeWarning("More than one location found for deviceCode",
-                    name[0], " between ", date_from, " and ", date_to)
-            location_code = result[0]['locationCode']
-            location_code = location_code.split('.')[0]
+        # sanity check. Only one locationCode should be retrieved
+        if len(result) > 1:
+            raise RuntimeWarning("More than one location found for deviceCode",
+                name[0], " between ", date_from, " and ", date_to)
+        location_code = result[0]['locationCode']
+        location_code = location_code.split('.')[0]
 
-            # get sublocations if they exist
-            result2 = onc.getLocationHierarchy({
-                'locationCode': location_code,
-                'dateFrom'  : date_from,
-                'dateTo'    : date_to
-                })
-            loc_children = result2[0]['children']
-            location_code = [location_code]
-            if loc_children is not None:
-                location_code += [x['locationCode'] for x in loc_children]
+        # get sublocations if they exist
+        result2 = onc.getLocationHierarchy({
+            'locationCode': location_code,
+            'dateFrom'  : date_from,
+            'dateTo'    : date_to
+            })
+        loc_children = result2[0]['children']
+        location_code = [location_code]
+        if loc_children is not None:
+            location_code += [x['locationCode'] for x in loc_children]
 
-            nloop += len(location_code) * len(category_code)
-            for lc in location_code:
-                for cc in category_code:
-                    filters = {
-                        'locationCode': lc,
-                        'deviceCategoryCode': cc,
-                        'dateFrom'  : date_from,
-                        'dateTo'    : date_to,
-                        "dataProductCode": "TSSD",
-                        "extension" : "csv",
-                    }
+        for lc in location_code:
+            for cc in category_code:
+                filters = {
+                    'locationCode': lc,
+                    'deviceCategoryCode': cc,
+                    'dateFrom'  : date_from,
+                    'dateTo'    : date_to
+                }
 
-                    filters = filters | params
+                filters = filters | params
 
-                    if fo is not None:
-                        r = fo.loc[(fo['deviceCode']==name[0]) & (fo['dateFrom']==date_o_from) &
-                            (fo['dateTo']==date_o_to) & (fo['locationCode']==lc) &
-                            (fo['deviceCategoryCode']==cc)]
-                        if r.shape[0] > 0:
-                            continue
+                if fo is not None:
+                    r = fo.loc[(fo['deviceCode']==name[0]) & (fo['dateFrom']==date_o_from) &
+                        (fo['dateTo']==date_o_to) & (fo['locationCode']==lc) &
+                        (fo['deviceCategoryCode']==cc)]
+                    if r.shape[0] > 0:
+                        continue
 
-                    if cc == 'NAV':
-                        filters['dpo_includeOrientationSensors'] = 'True'
+                to_write = f"{name[0]},{date_o_from},{date_o_to},{lc},{cc}"
 
-                    to_write = f"{name[0]},{date_o_from},{date_o_to},{lc},{cc}"
+                # make aPI call
+                _execute_download(onc, filters, output, f, to_write, log)
 
-                    futures.append(executor.submit(
-                        _execute_download, onc, filters, output, f, to_write, log
-                        ))
-
-        pbar = tqdm(total=nloop, desc = 'Processed files')
-        for _ in as_completed(futures):
-            pbar.update()
-        pbar.close()
-    log.close()
 
 
 def _execute_download(onc, filters, output, f, to_write, log):
     """
-    function passed to threadE
+    function execute getScalardataByLocation save results as a csv
     """
-    params_request = {
-        "method": "request",
-        "token": onc.token
-    }
-    params_request = params_request | filters
-
-    r1 = requests.get(
-                "https://data.oceannetworks.ca/api/dataProductDelivery",
-                params_request,
-                timeout=10,
-            )
-
-    if r1.ok:
-        json_result = r1.json()
-        request_id = json_result["dpRequestId"]
-    else:
-        error_msg = create_error_message(r1)
+    
+    try:
+        data = onc.getScalardataByLocation(filters, allPages=True)
+    except Exception as e:
+        error_msg = create_error_message(e)
         log.write(error_msg)
         return None
 
-    processing = True
-    while processing:
-        r2 = requests.get(
-            "https://data.oceannetworks.ca/api/dataProductDelivery",
-            {
-                "method": "run",
-                "token": onc.token,
-                "dpRequestId": request_id
-            },
-            timeout=10,
-        )
+    sensor_data = data['sensorData']
 
-        if r2.status_code == 202:
-            sleep(2)
-        elif r2.status_code == 200:
-            processing = False
-        else:
-            error_msg = create_error_message(r2)
-            log.write(error_msg)
-            return None
+    if sensor_data is None:
+        log.write(f"The following query returned no data:\n{data['queryUrl']}\n\n")
+        return None
+    
+    tmp = onc.getDevices({'locationCode': filters['locationCode'],
+                          'deviceCategoryCode': filters['deviceCategoryCode'],
+                          'dateFrom': filters['dateFrom'],
+                          'dateTo': filters['dateTo']})
+    deviceCode = tmp[0]['deviceCode']
 
-    data = r2.json()
-    for run in data:
-        run_id = run["dpRunId"]
-        file_count = run["fileCount"]
+    dfs = []
+    for sensor in sensor_data:
+        col_name = f"{sensor['propertyCode']}_{sensor['unitOfMeasure']}"
+        df = pd.DataFrame({
+            'time_UTC': sensor['data']['sampleTimes'],
+            col_name: sensor['data']['values']
+        })
+        dfs.append(df)
 
-        for i in range(file_count):
-            index = i + 1
+    final_df = dfs[0]
+    for df in dfs[1:]:
+        final_df = final_df.merge(df, on='time_UTC', how='outer', suffixes=(None,'2'))
 
-            processing = True
-            while processing:
-                r3 = requests.get(
-                    "https://data.oceannetworks.ca/api/dataProductDelivery",
-                    {
-                        "method": "download",
-                        "token": onc.token,
-                        "dpRunId": run_id,
-                        "index": index
-                    },
-                    timeout=10, stream=True)
+    strfrom = filters['dateFrom'].replace('-','').replace(':','')
+    strto = filters['dateTo'].replace('-','').replace(':','')
+    filename = f"{deviceCode}_{filters['locationCode']}_{filters['deviceCategoryCode']}_{strfrom}_{strto}.csv"
 
-                if r3.status_code == 202:
-                    sleep(2)
-                elif r3.status_code == 200:
-                    processing = False
-                else:
-                    error_msg = create_error_message(r3)
-                    log.write(error_msg)
-                    return None
+    final_df.to_csv(output / filename, index=False)
 
-            txt = r3.headers["Content-Disposition"]
-            filename = txt.split("filename=")[1]
-            with open(output / filename, 'wb') as file:
-                for data in r3.iter_content(chunk_size=1024*1024):
-                    file.write(data)
-            f.write(f"{to_write},{filename}\n")
+    f.write(f"{to_write},{filename}\n")
 
 
-def download_ts(onc, source, category_code, output='output',
-    options='fixed', nworkers=16):
+def download_ts(onc, source, category_code, output='output', options='fixed'):
     """
-    Donwload timeseries data for video files
+    Download timeseries data for video files
 
     Based on the filenames that are passed in the source, this function will
     download time series scalar data (tssd) that corresponds to the same
@@ -199,11 +146,9 @@ def download_ts(onc, source, category_code, output='output',
     output : str, default 'output'
         Name of the output folder to save files.
     options : str, default 'fixed'
-        Set options for search querry. If 'fixed', return clean resampled data
+        Set options for search query. If 'fixed', return clean resampled data
         for every minute, and maximum gap of one day between queries.
         If 'rov', return raw not resampled data, and set a maximum gap of one hour between queries.
-    nworkers : int, default 16
-        Number of simultaneous API calls to make
     """
     df, _, _ = parse_file_path(source, need_filename=False)
 
@@ -220,17 +165,16 @@ def download_ts(onc, source, category_code, output='output',
     # fix a few parameters
     if options == 'rov':
         params = {
-            'dpo_qualityControl': 0,
-            'dpo_resample': 'none',
-            'dpo_dataGaps': 0
+            'qualityControl': 'raw',
+            'fillGaps': 'False'
         }
         gap = pd.Timedelta('1h')
     elif options == 'fixed':
         params = {
-            'dpo_qualityControl': 1,
-            'dpo_resample': 'average',
-            'dpo_average': 60,
-            'dpo_dataGaps': 0
+            'qualityControl': 'clean',
+            'resampleType': 'avg',
+            'resamplePeriod': 60,
+            'fillGaps': 'False'
         }
         gap = pd.Timedelta('1d')
     else:
@@ -240,7 +184,7 @@ def download_ts(onc, source, category_code, output='output',
     if not isinstance(category_code, list):
         category_code = [category_code]
 
-    # check if command has been started alread
+    # check if command has been started already
     output_pathlib = Path(output)
     file_out = output_pathlib / (output_pathlib.name + '.csv')
     if file_out.exists():
@@ -257,7 +201,7 @@ def download_ts(onc, source, category_code, output='output',
     df['gap'] = (df.groupby('deviceCode')['timestamp'].diff() > gap).cumsum()
 
     # download files
-    _download_ts_helper(df, onc, category_code, params, output_pathlib, f, fo, nworkers)
+    _download_ts_helper(df, onc, category_code, params, output_pathlib, f, fo)
 
     f.close()
 
@@ -266,7 +210,7 @@ def _merge_ts_helper(data, tmp, tolerance):
     """
     Helper function to merge data based on timestamps
     """
-    data.set_index('Time_UTC', inplace=True)
+    data.set_index('time_UTC', inplace=True)
     data.interpolate(method='time', axis=0, inplace=True, limit_area='inside')
     tmp = pd.merge_asof(tmp, data, left_on='timestamp', right_index=True,
         suffixes=('', '_NEW'), tolerance=pd.Timedelta(tolerance, 's'), direction='nearest')
@@ -285,14 +229,14 @@ def _merge_ts_helper(data, tmp, tolerance):
 
 def read_ts(file, units=True):
     """
-    Read time series files from ONC and convert to a dataFrame
+    Read time series files from Oceans 3.0 Data Search and convert to a dataFrame
 
     Parameters
     ----------
     file : str
-        Path to a .csv file of time series scalar data (tssd) returned from Oceans.
+        Path to a .csv file of time series scalar data (TSSD) returned from Oceans 3.0 Data Search.
     units : bool, default True
-        Include units of the vairables in the column names. If False, units are removed.
+        Include units of the variables in the column names. If False, units are removed.
 
     Returns
     -------
@@ -314,7 +258,9 @@ def read_ts(file, units=True):
     cnames[0] = 'Time_UTC'
     index = [not 'QC Flag' in cname for cname in cnames]
 
-    if not units:
+    if units:
+        cnames = [re.sub(r"\s*\(([^)]+)\)", r"_\1", cname) for cname in cnames]
+    else:
         cnames = [re.sub(r'\([^)]*\)', '', cname).rstrip() for cname in cnames]
 
     cnames = make_names(cnames)
@@ -327,12 +273,12 @@ def read_ts(file, units=True):
     return out
 
 
-def merge_ts(source, ts_data, tolerance=15, units=True):
+def merge_ts(source, ts_data, tolerance=15, data_search=False):
     """
     Merge timeseries data with timestamps
 
-    This function will get the timestamps from source and retrive the
-    closest data avaiable inside the ts_data folder. If source is a
+    This function will get the timestamps from source and retrieve the
+    closest data available inside the ts_data folder. If source is a
     DataFrame or a .csv file, it should have a column timestamp or
     filename, from which timestamps will be derived (filenames must follow
     Oceans naming convention)
@@ -345,13 +291,13 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         must have a column 'filename' that follow the ONC convention
         or columns 'timestamp' and 'deviceCode'.
     ts_data : str
-        Folder containg csv files downloaded from Oceans 3
+        Folder that contains csv files downloaded from Oceans 3
     tolerance : float
-        Tolarance, in seconds, for timestamps to be merged. If the nearest
-        data avaiable from a given timestamp is higher than the tolarance,
+        Tolerance, in seconds, for timestamps to be merged. If the nearest
+        data available from a given timestamp is higher than the tolerance,
         then a NaN is returned instead.
-    units : bool, default True
-        Include units of the vairables in the column names. If False, units are removed.
+    data_search : bool, default False
+        If True, read data downloaded from the Data Search webpage. If False (default), read data downloaded with ``download_ts``.
 
     Returns
     -------
@@ -361,6 +307,13 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
     """
     df, _, _ = parse_file_path(source, need_filename=False)
     df.drop(columns='urlfile', inplace=True)
+
+    if data_search:
+        time_col = 'Time_UC'
+        read_func = read_ts
+    else:
+        time_col = 'time_UC'
+        read_func = pd.read_csv
 
     cleanup = None
     if 'timestamp' in df:
@@ -384,7 +337,7 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
 
     if ts_folder_csv.exists():
         ts_data = pd.read_csv(ts_folder_csv)
-        devide_codes = df['deviceCode'].unique()
+        device_codes = df['deviceCode'].unique()
     else:
         print(f"File {ts_folder_csv.name} not found. Assuming all files in {ts_data}"
             "are from the same location. Make sure you are not merging data of different"
@@ -392,19 +345,20 @@ def merge_ts(source, ts_data, tolerance=15, units=True):
         d = ts_folder.glob("*.csv")
         d = list(d)
         d = [x.name for x in d]
-        devide_codes = [df['deviceCode'].iloc[0]]
+        device_codes = [df['deviceCode'].iloc[0]]
         ts_data = pd.DataFrame({'deviceCode': df['deviceCode'].iloc[0], 'downloaded': d})
         df['deviceCode'] = df['deviceCode'].iloc[0]
 
     df.sort_values(['deviceCode', 'timestamp'], inplace=True)
 
     df_out = []
-    for dc in devide_codes:
+    for dc in device_codes:
         ts_data_dc = ts_data[ts_data['deviceCode'] == dc]
         tmp = df[df['deviceCode'] == dc]
 
         for _, row in ts_data_dc.iterrows():
-            data = read_ts(ts_folder / row['downloaded'], units)
+            data = read_func(ts_folder / row['downloaded'])
+            data[time_col] = pd.to_datetime(data[time_col], format='%Y-%m-%dT%H:%M:%S.%fZ', utc=True)
             tmp = _merge_ts_helper(data, tmp, tolerance)
 
         df_out.append(tmp)

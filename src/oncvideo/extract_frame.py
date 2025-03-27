@@ -73,12 +73,12 @@ def extract_frame(source, interval, output='frames', trim=False,
     output : str, default 'output'
         Name of the output folder to save converted videos
     trim : bool, default False
-        Trim video files to match the initial seach query
+        Trim video files to match the initial search query
     deinterlace : bool, default False
         Deinterlace video before getting the frames.
     rounding_near : bool, default False
         Grab frames at the middle of each interval (default ffmpeg
-        behaviour). If False, will grab frames at the start of each interval.
+        behavior). If False, will grab frames at the start of each interval.
     """
     header = 'filename,original_video,timestamp\n'
 
@@ -134,7 +134,7 @@ def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=N
         Name of the output folder to save images/videos.
     deinterlace : bool, default False
         Deinterlace video before getting the frames. This argument is ignored
-        for clips, since the stream is copyied from the original video.
+        for clips, since the stream is copied from the original video.
     """
     df, has_group, need_download = parse_file_path(source)
 
@@ -288,16 +288,22 @@ def extract_sharpest_frame(video_path, brt_thr=50):
     cap = cv2.VideoCapture(video_path)
 
     fps = cap.get(cv2.CAP_PROP_FPS)  # Get frame rate
+    skip = fps // 2
     
     if not cap.isOpened():
         return
 
     sharpest_frame = None
     max_sharpness = 0
-    count = 0
+    count = -1
     frame_number = 0
 
     while True:
+        count += 1
+        if count % skip != 0: # skip every half second
+            ret = cap.grab()
+            continue
+
         ret, frame = cap.read()
         if not ret:
             break  # Exit when video ends
@@ -316,9 +322,9 @@ def extract_sharpest_frame(video_path, brt_thr=50):
             max_sharpness = sharpness
             frame_number = count
             sharpest_frame = frame.copy()
-        
-        count += 1
 
     cap.release()
 
-    return sharpest_frame, frame_number / fps
+    time = pd.to_timedelta(frame_number / fps, unit='s')
+
+    return sharpest_frame, time

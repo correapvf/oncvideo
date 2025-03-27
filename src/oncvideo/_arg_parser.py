@@ -111,7 +111,7 @@ def fmergets(args):
     """
     run merge_ts function
     """
-    out = merge_ts(args.source, args.ts_data, args.tolerance, args.units)
+    out = merge_ts(args.source, args.ts_data, args.tolerance, args.data_search)
     out.to_csv(args.output, index=False, na_rep='NA')
 
 
@@ -120,7 +120,13 @@ def fdownloadst(args):
     run download_st function
     """
     onc_ob = onc(args.token)
-    download_st(onc_ob, args.url, args.extension)
+    df = download_st(onc_ob, args.url, args.extension)
+    if args.url.endswith('.csv'):
+        df.to_csv("videos_seatube.csv", index=False)
+    else:
+        print(df['url'])
+        print("Frame expected at ", df['video_time'])
+        print("File name for the frame: ", df['frame_filename'])
 
 
 def flinkst(args):
@@ -160,13 +166,13 @@ def fmaketimelapse(args):
     args.time_xy = point2int(args.time_xy)
     args.caption_xy = point2int(args.caption_xy)
     make_timelapse(args.folder, args.time_display, args.time_format, args.time_offset,
-                    args.fps, args.fontScale, args.logo, args.caption, args.time_xy, args.caption_xy)
+                    args.fps, args.fontSize, args.logo, args.caption, args.time_xy, args.caption_xy)
 
 def falign(args):
     """
     align images
     """
-    align_frames(args.folder, args.reference, args.warp_mode, args.epsilon, args.max_iterations)
+    align_frames(args.folder, args.method, args.reference)
 
 
 def main(args=None):
@@ -285,7 +291,7 @@ def main(args=None):
     subparser_tomp4.add_argument('-o', '--output', default="output",
         help="Folder to download files. Default 'output'")
     subparser_tomp4.add_argument('-t', '--trim', action="store_true",
-        help='Trim video files to match the initial seach query.')
+        help='Trim video files to match the initial search query.')
     subparser_tomp4.add_argument('-d', '--deinterlace', action="store_true",
         help='Deinterlace video. Default to False.')
     subparser_tomp4.add_argument('-crf', '--target_quality', type=float,
@@ -307,7 +313,7 @@ def main(args=None):
     subparser_extframe.add_argument('-o', '--output', default="frames",
         help="Folder to download frames. Default 'frames'")
     subparser_extframe.add_argument('-t', '--trim', action="store_true",
-        help='Trim video files to match the initial seach query.')
+        help='Trim video files to match the initial search query.')
     subparser_extframe.add_argument('-d', '--deinterlace', action="store_true",
         help='Deinterlace video. Default to False.')
     subparser_extframe.add_argument('-n', '--rounding_near', action="store_true",
@@ -322,10 +328,11 @@ def main(args=None):
     subparser_extframe.add_argument('-s', '--timestamps',
         help="Get frames at the specific timestamps, in seconds or mm:ss.f format.\
         Can be a comma separated list to extract multiple FOVs.\
-        If 'durations' is suplied, will extract clips starting at each timestamp.")
+        If 'durations' is supplied, will extract clips starting at each timestamp or get \
+        the sharpest frame within the duration.")
     subparser_extframe.add_argument('-c', '--clip_or_sharpest', default='sharpest',
         help=" Either 'clip' or 'sharpest'. If 'clip', the function will save clips instead of framegrabs,\
-        If 'sharpest', will save the sharpest frame only within the clip.")
+        If 'sharpest', will save the sharpest frame only within the clip. Only usd if durations is supplied.")
     subparser_extframe.add_argument('-t', '--duration', required=False,
         help="Duration of the FOVs to download, in seconds or mm:ss.f format.")
     subparser_extframe.add_argument('-o', '--output', default="fovs",
@@ -345,7 +352,7 @@ def main(args=None):
     subparser_downloadts.add_argument('-t', '--token', help='API token')
     subparser_downloadts.add_argument('-o', '--output', default="output",
         help="Name of the output folder to save files. Default 'output'")
-    subparser_downloadts.add_argument('-p', '--options', default="fixed",
+    subparser_downloadts.add_argument('-p', '--options', choices=['fixed','rov'], default="fixed",
         help="Set options for search querry. If 'fixed', return clean resampled data \
         for every minute, and maximum gap of one day between queries. \
         If 'rov', return raw (not resampled) data, and set a maximum gap of one hour between queries.")
@@ -362,8 +369,8 @@ def main(args=None):
         help="Name of the merged file. Default 'merged.csv'")
     subparser_mergets.add_argument('-t', '--tolerance', type=float, default=15,
         help="Tolarance, in seconds, for timestamps to be merged. Default to 15.")
-    subparser_mergets.add_argument('-u', '--units', action="store_false",
-        help="Remove units of the vairables in the column names.")
+    subparser_mergets.add_argument('-d', '--data_search', action="store_true",
+        help="Read data downloaded from the Data Search webpage.")
     subparser_mergets.set_defaults(func=fmergets)
 
     # download video from Seatube
@@ -372,7 +379,7 @@ def main(args=None):
     subparser_downloadst.add_argument('url',
         help="The link generated by Seatube V3 or csv file with 'seatube_link' column.")
     subparser_downloadst.add_argument('-t', '--token', help='API token')
-    subparser_downloadst.add_argument('-ext', '--extension', default="mov",
+    subparser_downloadst.add_argument('-e', '--extension', default="mov",
         help="File extension to download video. Default to 'mov'")
     subparser_downloadst.set_defaults(func=fdownloadst)
 
@@ -412,8 +419,8 @@ def main(args=None):
         Passed to pd.to_timedelta, check it's documentation for options.")
     subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
         help="Timelapse video FPS. Default 10.")
-    subparser_maketimelapse.add_argument('-e', '--fontScale', type=float, default=1,
-        help="Font scale for the timestamp. Default 1.")
+    subparser_maketimelapse.add_argument('-e', '--fontSize', type=float, default=44,
+        help="Font scale for the timestamp. Default 44.")
     subparser_maketimelapse.add_argument('-l', '--logo', action="store_true",
         help="Include ONC logo on the video.")
     subparser_maketimelapse.add_argument('-c', '--caption',
@@ -430,16 +437,11 @@ def main(args=None):
         'align', help="Align frames")
     subparser_align.add_argument('folder', default="fovs",
         help="Path to a folder where .jpg images are stored. Default 'fovs'.")
+    subparser_align.add_argument('-m', '--method', choices=['ORB', 'ECC', 'ORB+ECC'], default="ORB+ECC",
+        help="Algorithm used for alignment: Feature Matching (ORB), ECC Image Alignment, or both.")
     subparser_align.add_argument('-r', '--reference', default="middle",
         help="Define the reference frame which other frames will be aligned to. Can be \
-            'first', 'middle', 'last' or filename of the image to be used. Default 'middle'.")
-    subparser_align.add_argument('-w', '--warp_mode', choices=['affine', 'perspective'], default="perspective",
-        help="affine - allows translation, rotation and scale transformations. \
-            perspective - allows perspective transformations, including the ones in affine. Default 'perspective'.")
-    subparser_align.add_argument('-e', '--epsilon', type=float, default=1e-6,
-        help="Minimum acceptable error difference between iterations. Default 1e-6.")
-    subparser_align.add_argument('-i', '--max_iterations', type=int, default=3000,
-        help="Maximum number of times the algorithm updates the transformation matrix. Default 3000.")
+            'first', 'middle', 'last', 'previousX' or filename of the image to be used. Default 'middle'.")
     subparser_align.set_defaults(func=falign)
 
     args = parser.parse_args(args)

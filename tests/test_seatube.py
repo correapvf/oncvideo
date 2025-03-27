@@ -7,25 +7,25 @@ class TestDownloadSeatube():
     def setup_class(self):
         parser([
                 "downloadST",
-                "https://data.oceannetworks.ca/SeaTubeV3?resourceTypeId=600&resourceId=3851&time=2022-07-28T17:49:51.009Z",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826",
-                "-ext",
-                "mp4",
-                "-f"
+                "tests/seatube_test.csv",
+                # "-t",
+                # "API key",
+                "-e",
+                "mov"
               ])
+        self.df = pd.read_csv("videos_seatube.csv")
+    
+    def test_shape(self):
+        assert self.df.shape == (1, 5)
 
     def test_video(self):
-        p = Path('INSPACMINIZEUS4KCAMODYSSEUS_20220728T174502.000Z-LOW.mp4')
-        assert p.is_file()
+        assert self.df.loc[0, 'url'] == "https://data.oceannetworks.ca/AdFile?filename=INSPACMINIZEUS4KCAMODYSSEUS_20220728T174133.000Z.mov"
 
     def test_frame(self):
-        p = Path('INSPACMINIZEUS4KCAMODYSSEUS_20220728T174951.009Z.jpg')
-        assert p.is_file()
+        assert self.df.loc[0, 'frame_filename'] == "INSPACMINIZEUS4KCAMODYSSEUS_20220728T174951.009Z.jpg"
 
     def teardown_class(self):
-        Path('INSPACMINIZEUS4KCAMODYSSEUS_20220728T174502.000Z-LOW.mp4').unlink()
-        Path('INSPACMINIZEUS4KCAMODYSSEUS_20220728T174951.009Z.jpg').unlink()
+        Path('videos_seatube.csv').unlink()
 
 
 class TestLink():
@@ -33,8 +33,8 @@ class TestLink():
         parser([
                 "linkST",
                 "tests/videos_test.csv",
-                "-t",
-                "c1416a5f-2dc7-4cc6-83f0-17a8261f9826"
+                # "-t",
+                # "API key",
               ])
         self.df = pd.read_csv("output_link.csv")
 
