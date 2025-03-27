@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>oncvideo.dives_onc &mdash; oncvideo 1.3.6 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
 
@@ -71,13 +71,13 @@
              
   <h1>Source code for oncvideo.dives_onc</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Get a table with all ROV dives from SeaTube V3&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="k">def</span> <span class="nf">_check_time</span><span class="p">(</span><span class="n">dives</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_time</span><span class="p">(</span><span class="n">dives</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Check if file as modify less than 30 days ago</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -87,7 +87,7 @@
     <span class="k">return</span> <span class="n">timediff</span> <span class="o">&lt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_get_dives_api</span><span class="p">(</span><span class="n">onc</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_dives_api</span><span class="p">(</span><span class="n">onc</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    function to get dives table from Seatube V3</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -137,7 +137,7 @@
     <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="get_dives"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.get_dives">[docs]</a><span class="k">def</span> <span class="nf">get_dives</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="get_dives"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.get_dives">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_dives</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return all dives from Oceans3.0</span>
 

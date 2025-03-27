@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>oncvideo.list_files &mdash; oncvideo 1.3.6 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
 
@@ -71,12 +71,12 @@
              
   <h1>Source code for oncvideo.list_files</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;List archived files from ONC&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">sizeof_fmt</span><span class="p">,</span> <span class="n">strftd</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">name_to_timestamp</span>
-<span class="kn">from</span> <span class="nn">.dives_onc</span> <span class="kn">import</span> <span class="n">get_dives</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sizeof_fmt</span><span class="p">,</span> <span class="n">strftd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">name_to_timestamp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.dives_onc</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dives</span>
 
-<span class="k">def</span> <span class="nf">_ask_options</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">,</span> <span class="n">ihelp</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ask_options</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">,</span> <span class="n">ihelp</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List option and ask user to select which result they want to keep</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -105,7 +105,7 @@
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;You selected: &#39;</span> <span class="o">+</span> <span class="n">out</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span>
 
-<span class="k">def</span> <span class="nf">_ask_options_multiple</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ask_options_multiple</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    List option and ask user to select which result they want to keep</span>
 <span class="sd">    Allows multiple values to be choosen</span>
@@ -137,7 +137,7 @@
     <span class="k">return</span> <span class="n">out</span>
 
 
-<span class="k">def</span> <span class="nf">_list_file_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">statistics</span><span class="p">,</span> <span class="n">extension</span><span class="p">,</span> <span class="n">quality</span><span class="p">,</span> <span class="n">cols_to_keep</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_list_file_helper</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">statistics</span><span class="p">,</span> <span class="n">extension</span><span class="p">,</span> <span class="n">quality</span><span class="p">,</span> <span class="n">cols_to_keep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function to get the API output and filter unwanted</span>
 <span class="sd">    files and format columns</span>
@@ -253,7 +253,7 @@
     <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">cols_new</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_list_file_dc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get file list by device code</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -269,7 +269,7 @@
     <span class="k">return</span> <span class="n">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_list_file_lc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">locationCode</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_list_file_lc</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">locationCode</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="p">,</span>
                <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get file list by location code</span>
@@ -293,7 +293,7 @@
     <span class="k">return</span> <span class="n">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_api_to_df</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">dateFrom</span><span class="p">,</span> <span class="n">dateTo</span><span class="p">,</span> <span class="n">statistics</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract output from the API</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -304,7 +304,7 @@
     <span class="k">return</span> <span class="n">df</span>
 
 
-<div class="viewcode-block" id="list_file"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file">[docs]</a><span class="k">def</span> <span class="nf">list_file</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceId</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">locationCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dive</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="o">=</span><span class="s1">&#39;VIDEOCAM&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="list_file"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">list_file</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">deviceCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceId</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">locationCode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dive</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deviceCategoryCode</span><span class="o">=</span><span class="s1">&#39;VIDEOCAM&#39;</span><span class="p">,</span>
     <span class="n">dateFrom</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dateTo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;ask&#39;</span><span class="p">,</span> <span class="n">extension</span><span class="o">=</span><span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get list of files archived in Oceans 3.0</span>
@@ -398,7 +398,7 @@
 
 
 
-<div class="viewcode-block" id="list_file_batch"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file_batch">[docs]</a><span class="k">def</span> <span class="nf">list_file_batch</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">csvfile</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;ask&#39;</span><span class="p">,</span> <span class="n">extension</span><span class="o">=</span><span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_cols</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="list_file_batch"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.list_file_batch">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">list_file_batch</span><span class="p">(</span><span class="n">onc</span><span class="p">,</span> <span class="n">csvfile</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s1">&#39;ask&#39;</span><span class="p">,</span> <span class="n">extension</span><span class="o">=</span><span class="s1">&#39;mp4&#39;</span><span class="p">,</span> <span class="n">statistics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_cols</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Batch list of files archived in Oceans 3.0</span>
 <span class="sd">    List video files based on parameters stored in a csv file</span>

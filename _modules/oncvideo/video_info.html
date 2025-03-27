@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>oncvideo.video_info &mdash; oncvideo 1.3.6 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
 
@@ -71,14 +71,14 @@
              
   <h1>Source code for oncvideo.video_info</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Get parameters from videos&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">subprocess</span> <span class="k">as</span> <span class="nn">sp</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">strftd</span><span class="p">,</span> <span class="n">parse_file_path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">strftd</span><span class="p">,</span> <span class="n">parse_file_path</span>
 
-<span class="k">def</span> <span class="nf">_meta_video</span><span class="p">(</span><span class="n">urlfile</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_meta_video</span><span class="p">(</span><span class="n">urlfile</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create ffprobe command and run to get</span>
 <span class="sd">    parameters from videos</span>
@@ -132,7 +132,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">codec</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">pix_fmt</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">bit_rate</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">fps</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">fps_mode</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">scan_type</span><span class="si">}</span><span class="s1">,&#39;</span>
         <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">aspect</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">frame_w</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">frame_h</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">file_size</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="video_info"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.video_info">[docs]</a><span class="k">def</span> <span class="nf">video_info</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;video_info.csv&#39;</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="video_info"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.video_info">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">video_info</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;video_info.csv&#39;</span><span class="p">,</span> <span class="n">check_interlaced</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get video information</span>
 

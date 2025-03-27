@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>oncvideo.extract_frame &mdash; oncvideo 1.3.6 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
 
@@ -72,17 +72,17 @@
   <h1>Source code for oncvideo.extract_frame</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Function to extract frames from videos&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">tempfile</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">cv2</span>
-<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">download_file</span><span class="p">,</span> <span class="n">to_timedelta</span><span class="p">,</span> <span class="n">strftd2</span><span class="p">,</span> <span class="n">parse_file_path</span><span class="p">,</span> <span class="n">run_ffmpeg</span><span class="p">,</span> <span class="n">LOGO</span><span class="p">,</span> <span class="n">strfdelta</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">name_to_timestamp</span>
-<span class="kn">from</span> <span class="nn">._iterate_ffmpeg</span> <span class="kn">import</span> <span class="n">iterate_ffmpeg</span><span class="p">,</span> <span class="n">iterate_init</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_file</span><span class="p">,</span> <span class="n">to_timedelta</span><span class="p">,</span> <span class="n">strftd2</span><span class="p">,</span> <span class="n">parse_file_path</span><span class="p">,</span> <span class="n">run_ffmpeg</span><span class="p">,</span> <span class="n">LOGO</span><span class="p">,</span> <span class="n">strfdelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">name_to_timestamp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._iterate_ffmpeg</span><span class="w"> </span><span class="kn">import</span> <span class="n">iterate_ffmpeg</span><span class="p">,</span> <span class="n">iterate_init</span>
 
-<span class="k">def</span> <span class="nf">_ffmpeg_run_frame</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ffmpeg_run_frame</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create ffmpeg command and run and </span>
 <span class="sd">    write in a csv file for the generated frames</span>
@@ -129,7 +129,7 @@
             <span class="n">ferr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No frame was extracted from: </span><span class="si">{</span><span class="n">input_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="extract_frame"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_frame">[docs]</a><span class="k">def</span> <span class="nf">extract_frame</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;frames&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<div class="viewcode-block" id="extract_frame"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_frame">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_frame</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;frames&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rounding_near</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract frames at a given interval</span>
@@ -179,7 +179,7 @@
     <span class="n">iterate_ffmpeg</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">trim</span><span class="p">,</span> <span class="n">_ffmpeg_run_frame</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="extract_fov"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_fov">[docs]</a><span class="k">def</span> <span class="nf">extract_fov</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;fovs&#39;</span><span class="p">,</span> <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="extract_fov"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.extract_fov">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_fov</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;fovs&#39;</span><span class="p">,</span> <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract FOVs from videos</span>
 
@@ -210,7 +210,7 @@
 
     <span class="k">if</span> <span class="n">fov_csv</span><span class="p">:</span>
         <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="n">y</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
 
         <span class="n">df</span><span class="p">[</span><span class="s1">&#39;subfolder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;FOV</span><span class="si">{</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))])</span>
         <span class="n">maxfov</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;fovs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
@@ -325,7 +325,8 @@
 
 
 
-<div class="viewcode-block" id="make_timelapse"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.make_timelapse">[docs]</a><span class="k">def</span> <span class="nf">make_timelapse</span><span class="p">(</span><span class="n">folder</span><span class="o">=</span><span class="s1">&#39;fovs&#39;</span><span class="p">,</span> <span class="n">time_display</span><span class="o">=</span><span class="s1">&#39;elapsed&#39;</span><span class="p">,</span> <span class="n">time_format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_round</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fontScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">logo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="make_timelapse"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.make_timelapse">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">make_timelapse</span><span class="p">(</span><span class="n">folder</span><span class="o">=</span><span class="s1">&#39;fovs&#39;</span><span class="p">,</span> <span class="n">time_display</span><span class="o">=</span><span class="s1">&#39;elapsed&#39;</span><span class="p">,</span> <span class="n">time_format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">fontScale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">logo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time_xy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">caption_xy</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate timelapse video from images</span>
 
@@ -341,9 +342,6 @@
 <span class="sd">        Format how the timestamp will be writen on the video. For time_display=&#39;current&#39;, check formating options for</span>
 <span class="sd">        &#39;strftime&#39;. For time_display=&#39;elapsed&#39;, options are %y %m %w %d %H %M %S for years, months,</span>
 <span class="sd">        weeks, days, hours, minutes, seconds.</span>
-<span class="sd">    time_round : str, default None</span>
-<span class="sd">        Frequency string indicating the rounding resolution of the displayed timestamp.</span>
-<span class="sd">        Passed to pandas.Timedelta.round or pandas.Timestamp.round</span>
 <span class="sd">    time_offset : str, timedelta or float, default 0</span>
 <span class="sd">        Offset the time displayed in the frame if time_display=&#39;elapsed&#39;.</span>
 <span class="sd">        Passed to pd.to_timedelta, check it&#39;s documentation for options.</span>
@@ -355,6 +353,11 @@
 <span class="sd">        Include ONC logo on the video?</span>
 <span class="sd">    caption : str, default None</span>
 <span class="sd">        Insert a caption at the bottom of the screen. You can break lines with &lt;br&gt; tag.</span>
+<span class="sd">    time_xy : tuple of 2 ints, default None</span>
+<span class="sd">        Coordinates of the bottom-left corner of the time text. X is the distance (in pixels) from the left edge and</span>
+<span class="sd">        Y is the distance from the top edge of the image. Default will draw in the top-left corner.</span>
+<span class="sd">    caption_xy : tuple of 2 int, default None</span>
+<span class="sd">        Coordinates of the bottom-left corner of the first line of the caption. Default will draw in the bottom corner.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">folder</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
 
@@ -377,7 +380,7 @@
 
     <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">fu</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Processed folders&#39;</span><span class="p">):</span>
         <span class="n">images</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.jpg&quot;</span><span class="p">)</span>
-        <span class="n">images</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">continue</span>
 
@@ -388,7 +391,7 @@
         <span class="n">vidwriter</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoWriter</span><span class="p">(</span><span class="n">output_video</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoWriter_fourcc</span><span class="p">(</span><span class="o">*</span><span class="s2">&quot;mp4v&quot;</span><span class="p">),</span> <span class="n">fps</span><span class="p">,</span> <span class="n">video_dim</span><span class="p">)</span>
 
         <span class="n">spacing</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">40</span> <span class="c1"># 2.5% of the image size</span>
-        <span class="n">ctxt</span> <span class="o">=</span> <span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="n">spacing</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="mi">22</span><span class="o">*</span><span class="n">fontScale</span><span class="p">))</span>
+        <span class="n">ctxt</span> <span class="o">=</span> <span class="p">(</span><span class="n">spacing</span><span class="p">,</span> <span class="n">spacing</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="mi">22</span><span class="o">*</span><span class="n">fontScale</span><span class="p">))</span> <span class="k">if</span> <span class="n">time_xy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">time_xy</span><span class="p">)</span>
         <span class="n">font</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">FONT_HERSHEY_SIMPLEX</span>
 
         <span class="k">if</span> <span class="n">logo</span><span class="p">:</span>
@@ -416,12 +419,8 @@
 
                 <span class="k">if</span> <span class="n">time_display</span> <span class="o">==</span> <span class="s1">&#39;elapsed&#39;</span><span class="p">:</span>
                     <span class="n">timedelta</span> <span class="o">=</span> <span class="n">timestamp</span> <span class="o">-</span> <span class="n">timestamp0</span> <span class="o">+</span> <span class="n">time_offset</span>
-                    <span class="k">if</span> <span class="n">time_round</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">timedelta</span> <span class="o">=</span> <span class="n">timedelta</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">time_round</span><span class="p">)</span>
                     <span class="n">timestamp</span> <span class="o">=</span> <span class="n">strfdelta</span><span class="p">(</span><span class="n">timedelta</span><span class="p">,</span> <span class="n">time_format</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">time_round</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">timedelta</span> <span class="o">=</span> <span class="n">timedelta</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">time_round</span><span class="p">)</span>
                     <span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">)</span>
 
                 <span class="c1"># Using cv2.putText() method</span>
@@ -429,10 +428,10 @@
                                 <span class="n">fontScale</span><span class="o">=</span><span class="n">fontScale</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="n">thickness</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lineType</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">caption</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">textY</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">spacing</span>
+                <span class="n">textY</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">spacing</span> <span class="k">if</span> <span class="n">caption_xy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">caption_xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">caption</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;&lt;br&gt;&#39;</span><span class="p">)):</span>
                     <span class="n">textsize</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getTextSize</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span> <span class="n">fontScale</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">textX</span> <span class="o">=</span> <span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">textsize</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="mi">2</span>
+                    <span class="n">textX</span> <span class="o">=</span> <span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">textsize</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">caption_xy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">caption_xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                     <span class="n">img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="p">(</span><span class="n">textX</span><span class="p">,</span> <span class="n">textY</span><span class="p">),</span> <span class="n">fontFace</span><span class="o">=</span><span class="n">font</span><span class="p">,</span>
                                 <span class="n">fontScale</span><span class="o">=</span><span class="n">fontScale</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="n">thickness</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lineType</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
                     <span class="n">textY</span> <span class="o">=</span> <span class="n">textY</span> <span class="o">-</span> <span class="n">textsize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">spacing</span>

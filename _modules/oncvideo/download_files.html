@@ -6,7 +6,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>oncvideo.download_files &mdash; oncvideo 1.3.6 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="../../_static/function.css?v=3a7abf9d" />
 
@@ -71,13 +71,13 @@
              
   <h1>Source code for oncvideo.download_files</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Module providing functions to download and convert video.&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">shutil</span>
-<span class="kn">from</span> <span class="nn">._utils</span> <span class="kn">import</span> <span class="n">run_ffmpeg</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">name_to_timestamp</span>
-<span class="kn">from</span> <span class="nn">._iterate_ffmpeg</span> <span class="kn">import</span> <span class="n">iterate_ffmpeg</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_ffmpeg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">name_to_timestamp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._iterate_ffmpeg</span><span class="w"> </span><span class="kn">import</span> <span class="n">iterate_ffmpeg</span>
 
 
-<span class="k">def</span> <span class="nf">_ffmpeg_run_download</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ffmpeg_run_download</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create and run ffmpeg command and save csv file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -96,7 +96,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">subfolder</span><span class="si">}{</span><span class="n">output_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="download_files"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.download_files">[docs]</a><span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="download_files"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.download_files">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Download files from the table provided by source</span>
 
@@ -119,7 +119,7 @@
     <span class="n">iterate_ffmpeg</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">trim</span><span class="p">,</span> <span class="n">_ffmpeg_run_download</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">_ffmpeg_run_mp4</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ffmpeg_run_mp4</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">skip</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">subfolder</span><span class="p">,</span> <span class="n">video_name</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create and run ffmpeg command and save csv file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -138,7 +138,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">subfolder</span><span class="si">}{</span><span class="n">output_file</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">video_name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="to_mp4"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.to_mp4">[docs]</a><span class="k">def</span> <span class="nf">to_mp4</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">crf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="to_mp4"><a class="viewcode-back" href="../../oncvideo.html#oncvideo.to_mp4">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">to_mp4</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">,</span> <span class="n">trim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">deinterlace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">crf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">keep_audio</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yuv420</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">h265</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert video to mp4</span>
