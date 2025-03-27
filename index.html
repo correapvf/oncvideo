@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>oncvideo &mdash; oncvideo 1.3.6 documentation</title>
+  <title>ONCvideo &mdash; oncvideo 1.3.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/function.css?v=3a7abf9d" />
@@ -61,7 +61,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">oncvideo</li>
+      <li class="breadcrumb-item active">ONCvideo</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -72,9 +72,72 @@
            <div itemprop="articleBody">
              
   <section id="oncvideo">
-<h1>oncvideo<a class="headerlink" href="#oncvideo" title="Permalink to this heading"></a></h1>
+<h1>ONCvideo<a class="headerlink" href="#oncvideo" title="Permalink to this heading"></a></h1>
 <p>A collection of commands to help get archived videos from Oceans 3.</p>
-<p><strong>GitHub:</strong> <a class="reference external" href="https://github.com/correapvf/oncvideo">https://github.com/correapvf/oncvideo</a></p>
+<p>Avaiable commands include:</p>
+<ul class="simple">
+<li><p>list - List video files for a specific camera between two dates</p></li>
+<li><p>blist - List video files based on parameters stored in a csv file</p></li>
+<li><p>getDives - Create a csv file listing dives from Oceans3.0</p></li>
+<li><p>info - Extract video information (duration, resolution, fps)</p></li>
+<li><p>didson - Extract information of DIDSON files</p></li>
+<li><p>download - Download video files</p></li>
+<li><p>tomp4 - Convert video to mp4 format</p></li>
+<li><p>extframe - Extract frames from video files</p></li>
+<li><p>extfov - Extract FOVs (frames or videos) from video files</p></li>
+<li><p>make_timelapse - Generate timelapse video from images</p></li>
+<li><p>downloadTS - Download time series data</p></li>
+<li><p>mergeTS - Merge time series data based on the closest timestamps</p></li>
+<li><p>downloadST - Download video from Seatube link</p></li>
+<li><p>linkST - Generate link video from Seatube</p></li>
+<li><p>renameST - Rename framegrabs from Seatube to correct timestamp</p></li>
+</ul>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">oncvideo</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>Before using <code class="docutils literal notranslate"><span class="pre">ONCvideo</span></code>, FFmpeg must be installed and accessible via the <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment variable.
+Check <a class="reference external" href="https://ffmpeg.org/download.html">https://ffmpeg.org/download.html</a> on details how to install, or use your package manager of choice (e.g. <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">install</span> <span class="pre">ffmpeg</span></code> on Debian/Ubuntu, <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">ffmpeg</span></code> on OS X, <code class="docutils literal notranslate"><span class="pre">winget</span> <span class="pre">install</span> <span class="pre">ffmpeg</span></code> on Windows).</p>
+</div></blockquote>
+</section>
+<section id="getting-started">
+<h2>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h2>
+<p>The package provides multiple commands to get a list of available videos in our archives and perform multiple operations with the videos (e.g. downloading, extracting frames, etc).</p>
+<p>In most use cases, you will use commands <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">blist</span></code> to get a list of files based on your search criteria. This will generate a csv file that you can use in R, Python or Excel to check the availability of data, remove bad files (size or duration too small) or filter files based a criteria that you want. For example, you may want to filter one file every day/week/month and download these videos to check its quality throughout your time range. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>oncvideo list -t API_TOKEN -lc BACAX -from 2018-01-01 -to “2024-05-01 04:00:00”
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>API_TOKEN: this is your API_TOKEN. You can obtain one logging in <a class="reference external" href="https://data.oceannetworks.ca">https://data.oceannetworks.ca</a> &gt; Profile &gt; Web Service API</p></li>
+<li><p>BACAX: that is the location code for Barkley Axis. An easy way to find the location code is to select the site you want in the Data Search (<a class="reference external" href="https://data.oceannetworks.ca/DataSearch">https://data.oceannetworks.ca/DataSearch</a>) and check in the URL the value after <em>locationCode=</em></p></li>
+<li><p>2018 and “2024-05-01 04:00:00” is the time range that you can specify the search. Note the quotes when you have space.</p></li>
+</ul>
+<p>You can also use -h to see a list of possible arguments for each subcommand:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">oncvideo</span> <span class="nb">list</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code> can also get videos based on deviceID or deviceCode, or based on dives number (for ROVs only). Check <code class="docutils literal notranslate"><span class="pre">blist</span></code> in case you need to perform multiple searchs for a giver project (e.g. multiple surveys of ROV dives, a given month at different sites).</p>
+<p>After filtering the csv file, you can use other commands. E.g. to extract frames:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">oncvideo</span> <span class="n">extfov</span> <span class="n">FILTERED</span><span class="o">.</span><span class="n">csv</span> <span class="o">-</span><span class="n">s</span> <span class="mi">00</span><span class="p">:</span><span class="mi">30</span><span class="p">,</span><span class="mi">01</span><span class="p">:</span><span class="mi">45</span><span class="p">,</span><span class="mi">02</span><span class="p">:</span><span class="mi">30</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>FILTERED.csv is the name of your csv file</p></li>
+<li><p>00:30,01:45,02:30 are the timestamps to extract frames (you can separate multiple with comma). <strong>Alternatively</strong>, you can create a column named <code class="docutils literal notranslate"><span class="pre">fovs</span></code> and put timestamps in that column. The advantage is that you can use different timestamps for different times/periods, as different deployments may have different schedules for the cameras.</p></li>
+</ul>
+<p>If you are interested, you can create a video time-lapse based on the frames that your extracted using the subcommand <code class="docutils literal notranslate"><span class="pre">timelapse</span></code>.</p>
+</section>
+<section id="docs">
+<h2>Docs<a class="headerlink" href="#docs" title="Permalink to this heading"></a></h2>
+<p>Documentation for functions in the package is avaiable at <a class="reference external" href="https://correapvf.github.io/oncvideo">https://correapvf.github.io/oncvideo</a>.
+After installation, use <code class="docutils literal notranslate"><span class="pre">oncvideo</span> <span class="pre">-h</span></code> to get help and a list of available commands avaiable as well.</p>
+<p>See also <a class="reference external" href="tests">tests</a> folder for exemples of <em>.csv</em> files that can be used with the <em>blist</em>/<em>list_file_batch</em> command/function.</p>
+</section>
+<section id="setting-api-key">
+<h2>Setting API key<a class="headerlink" href="#setting-api-key" title="Permalink to this heading"></a></h2>
+<p>If you use the commands often, it may get boring to type the API key every time. You can create an enviroment variable in your OS named <code class="docutils literal notranslate"><span class="pre">ONC_API_TOKEN</span></code> and store your API key there. The package will automatically get the API key and you don’t need to provide as an argument.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
@@ -103,6 +166,8 @@
 </li>
 </ul>
 </div>
+<p><strong>GitHub:</strong> <a class="reference external" href="https://github.com/correapvf/oncvideo">https://github.com/correapvf/oncvideo</a></p>
+</section>
 </section>
 
 
