@@ -126,7 +126,7 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
             append = True
 
             if len(images) == 0:
-                print(f"Skkiping file {output_video.name}. File already exists and no new frames to add.")
+                print(f"Skipping file {output_video.name}. File already exists and no new frames to add.")
                 continue
         else:
             append = False
