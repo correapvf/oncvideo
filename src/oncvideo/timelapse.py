@@ -45,8 +45,8 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
         Passed to pd.to_timedelta, check it's documentation for options.
     fps : float, default 10
         Timelapse video FPS.
-    fontScale : float, default 1
-        Font scale for the timestamp. Increase values for a larger font size.
+    font_size : float, default 44
+        Font size for the timestamp and caption.
     logo : bool, default False
         Include ONC logo on the video?
     caption : str, default None
@@ -56,6 +56,9 @@ def make_timelapse(folder='fovs', time_display='elapsed', time_format=None, time
         Y is the distance from the top edge of the image. Default will draw in the top-left corner.
     caption_xy : tuple of 2 int, default None
         Coordinates of the bottom-left corner of the first line of the caption. Default will draw in the bottom corner.
+    **kwargs
+        Arguments passed to other function. Possible options are 'font_weight' (ttf_opensans.opensans) and 'fill', 'spacing',
+        'anchor' and 'align' (PIL.ImageDraw.text).
     """
     defaultKwargs = dict(
         fill=None,

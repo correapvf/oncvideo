@@ -420,7 +420,7 @@ def main(args=None):
     subparser_maketimelapse.add_argument('-r', '--fps', type=float, default=10,
         help="Timelapse video FPS. Default 10.")
     subparser_maketimelapse.add_argument('-e', '--fontSize', type=float, default=44,
-        help="Font scale for the timestamp. Default 44.")
+        help="Font size for the timestamp and caption. Default 44.")
     subparser_maketimelapse.add_argument('-l', '--logo', action="store_true",
         help="Include ONC logo on the video.")
     subparser_maketimelapse.add_argument('-c', '--caption',
