@@ -10,7 +10,7 @@
 project = 'oncvideo'
 copyright = '2024, Paulo Correa'
 author = 'Paulo Correa'
-release = '1.3.6'
+release = '1.4'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
