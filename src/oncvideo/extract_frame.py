@@ -107,7 +107,7 @@ def extract_frame(source, interval, output='frames', trim=False,
     iterate_ffmpeg(source, output, header, trim, _ffmpeg_run_frame, params)
 
 
-def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=None, output='fovs', deinterlace=False):
+def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=None, output='fovs', deinterlace=False, brt_thr=1):
     """
     Extract FOVs from videos
 
@@ -135,6 +135,10 @@ def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=N
     deinterlace : bool, default False
         Deinterlace video before getting the frames. This argument is ignored
         for clips, since the stream is copied from the original video.
+    brt_thr : float, default 1
+        Brightness Threshold. Value between 0-255. Frames with brightness lower than this threshold
+        are skipped when method is 'sharpest'. Set higher values (20-50) to avoid getting
+        frames where the lights are out.  
     """
     df, has_group, need_download = parse_file_path(source)
 
@@ -249,7 +253,7 @@ def extract_fov(source, timestamps=None, clip_or_sharpest='sharpest', duration=N
                         run_ffmpeg(ff_cmd, filename=new_name.name)
                         
                         if sharpest:
-                            sharpest_frame, time = extract_sharpest_frame(str(new_name))
+                            sharpest_frame, time = extract_sharpest_frame(str(new_name), brt_thr)
                             new_name.unlink()
 
                             if sharpest_frame is not None:

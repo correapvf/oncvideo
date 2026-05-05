@@ -94,7 +94,7 @@ def fextfov(args):
     if args.timestamps is not None:
         args.timestamps = args.timestamps.split(",")
     extract_fov(args.source, args.timestamps, args.clip_or_sharpest,
-                args.duration, args.output, args.deinterlace)
+                args.duration, args.output, args.deinterlace, args.brt_thr)
 
 
 def fdownloadts(args):
@@ -339,6 +339,8 @@ def main(args=None):
         help="Folder to download files. Default 'fovs'")
     subparser_extframe.add_argument('-d', '--deinterlace', action="store_true",
         help='Deinterlace video before getting frame. Default to False.')
+    subparser_extframe.add_argument('-b', '--brt_thr', default=1, type=float,
+        help="Brightness Threshold. Value between 0-255.")   
     subparser_extframe.set_defaults(func=fextfov)
 
     # download time series
